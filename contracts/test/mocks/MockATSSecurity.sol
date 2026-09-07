@@ -29,6 +29,12 @@ contract MockATSSecurity is IATSSecurity, IATSErrors {
 
     string public name;
 
+    /// @notice Emitted on identity-registry changes. The independent verifier replays these to
+    ///         reconstruct "was `account` verified at block N?" — the basis of compliance auditing.
+    event Verified(address indexed account, bool status);
+    /// @notice Emitted on control-list changes.
+    event Blocked(address indexed account, bool status);
+
     constructor(string memory _name) {
         name = _name;
     }
@@ -41,10 +47,12 @@ contract MockATSSecurity is IATSSecurity, IATSErrors {
 
     function setVerified(address who, bool v) external {
         verified[who] = v;
+        emit Verified(who, v);
     }
 
     function setBlocked(address who, bool b) external {
         blocked[who] = b;
+        emit Blocked(who, b);
     }
 
     // --- IATSSecurity ---

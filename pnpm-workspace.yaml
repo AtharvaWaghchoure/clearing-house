@@ -1,0 +1,5 @@
+packages:
+  - "verifier"
+  - "subgraph"
+  - "services/*"
+  - "app"

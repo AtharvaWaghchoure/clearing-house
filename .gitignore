@@ -20,6 +20,10 @@ app/.next/
 app/out/
 app/node_modules/
 
+# verifier demo outputs (regenerated each run)
+verifier/.local/
+verifier/dist/
+
 # subgraph
 subgraph/generated/
 subgraph/build/

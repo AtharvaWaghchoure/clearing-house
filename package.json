@@ -1,0 +1,12 @@
+{
+  "name": "clearing-house",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A tokenised-bond settlement venue: compliance checked inside the same transaction that settles both legs, provable from an index the venue does not control.",
+  "packageManager": "pnpm@9.4.0",
+  "scripts": {
+    "test:contracts": "cd contracts && forge test",
+    "verify": "pnpm --filter @clearing-house/verifier",
+    "demo": "pnpm --filter @clearing-house/verifier demo"
+  }
+}
