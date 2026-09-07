@@ -63,22 +63,22 @@ MatchingEngine.settle(orderA, orderB)
 
 ## 3. Build phases (with acceptance criteria)
 
-### Phase 0 — Foundation  ⏳ IN PROGRESS
-- [x] Verify deployed contracts + repo (done above)
+### Phase 0 — Foundation  ✅ DONE
+- [x] Verify deployed contracts + repo
 - [x] Shallow-clone ATS into `_reference/ats` (gitignored) for real interfaces
-- [ ] `git init`; pnpm workspace; Foundry project under `contracts/`
-- [ ] Extract the minimal ATS interfaces I actually call into `contracts/src/interfaces/ats/`
-- **Accept:** `forge build` compiles an empty skeleton; workspace installs clean.
+- [x] `git init`; Foundry project under `contracts/`; forge-std vendored
+- [x] Extract the minimal ATS interfaces into `contracts/src/interfaces/ats/`
+- **Accept:** ✅ `forge build` compiles clean.
 
-### Phase 1 — Core DvP (P0)  ← the spine
-- [ ] `ISettlementLeg` interface + `SettlementReceipt` event
-- [ ] `HederaHoldLeg` (execute an ATS `executeHoldByPartition`)
-- [ ] `MatchingEngine.settle()`: pre-flight `canTransferByPartition` → revert with EIP-1066 code; execute both legs atomically; emit receipt
-- [ ] Foundry tests against a **mock ATS** proving: (a) happy-path atomic DvP, (b) KYC-revoked buyer → revert `0x56 IDENTITY_REGISTRY_NOT_VERIFIED`, (c) one leg fails → whole tx reverts (no partial settlement)
-- [ ] Deploy/interaction scripts (ethers/viem) → Hedera testnet, reusing BLR/Factory
+### Phase 1 — Core DvP (P0)  ← the spine  ✅ CONTRACTS DONE / ⏳ deploy pending
+- [x] `ISettlementLeg` interface + `SettlementReceipt` event
+- [x] `HederaHoldLeg` (execute an ATS `executeHoldByPartition` as escrow)
+- [x] `MatchingEngine.settle()`: pre-flight `canTransferByPartition` → revert with EIP-1066 code; execute both legs atomically; emit receipt
+- [x] Foundry tests vs **mock ATS**: (a) atomic DvP ✅, (b) KYC-revoked buyer → revert with the REAL `0x10 DISALLOWED_OR_STOP · AddressNotVerified` (doc's `0x56` was fictional) ✅, (c) one leg fails → whole tx reverts ✅ — **9 tests pass**
+- [ ] Deploy/interaction scripts (viem) → Hedera testnet, reusing BLR/Factory  ← execution-gated on a funded key
 - [ ] Issue a real bond via ATS Factory; place two holds; fire one `settle` tx
-- [ ] HashScan verification of my contracts (ATS ships no tooling — do manually)
-- **Accept:** one testnet tx hash where both legs move; a second where the same order rejects with a *named* EIP-1066 reason read from `canTransferByPartition` before signing.
+- [ ] HashScan verification of my contracts
+- **Accept:** one testnet tx where both legs move; a second where the same order rejects with a *named* reason. (Local anvil e2e can prove the logic without a Hedera key.)
 
 ### Phase 2 — Harness PR (P0, cheap)
 - [ ] Reproduce the harness gap (`CHAIN` validates nothing → `chainAssertions`)
@@ -92,8 +92,8 @@ MatchingEngine.settle(orderA, orderB)
 - [ ] Demo: flip a flag so the venue misreports one trade → verifier flags the trade id
 - **Accept:** live subgraph queried; verifier catches the injected lie by id.
 
-### Phase 4 — Arc leg (P2)
-- [ ] `ArcMemoLeg`: settle USDC through Arc `Memo` so `Transfer` emits from payer EOA with indexed trade ref
+### Phase 4 — Arc leg (P2)  ✅ CONTRACT DONE / ⏳ deploy pending
+- [x] `ArcMemoLeg`: settle USDC through Arc `Memo` so `Transfer` emits from payer EOA with indexed trade ref — **6 tests pass**, CallFrom precompile emulated in the mock
 - [ ] Deploy on Arc testnet; architecture diagram; name the exact bounty in each Arc submission
 - [ ] (Sep 16–30) push to Arc mainnet, post tx
 - **Accept:** USDC settlement tx on Arc carrying the trade id in an indexed log from the payer's own address.
