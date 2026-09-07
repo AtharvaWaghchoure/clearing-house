@@ -1,0 +1,32 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# reference clones (not part of this repo)
+_reference/
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/**/dry-run/
+
+# next / frontend
+app/.next/
+app/out/
+app/node_modules/
+
+# subgraph
+subgraph/generated/
+subgraph/build/
+subgraph/node_modules/
+
+# misc
+*.log
+.DS_Store
+dist/
+coverage/
