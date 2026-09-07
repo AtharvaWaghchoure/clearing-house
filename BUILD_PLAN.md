@@ -5,7 +5,7 @@
 > venue proves — from an index it does not control — that no non-compliant trade ever cleared.
 
 **Event:** ETHOnline 2026 · **Sponsors:** Hedera · The Graph · Arc (Circle)
-**Source spec:** [`potential_ideas/10-PROJECT-clearing-house.md`](potential_ideas/10-PROJECT-clearing-house.md)
+**Source spec:** private idea notes (local, not published)
 
 ---
 
@@ -122,7 +122,6 @@ MatchingEngine.settle(orderA, orderB)
 ├── services/nav-x402/  x402 NAV endpoint (Blocky402)
 ├── harness-pr/         The chainAssertions harness contribution (+ PR notes)
 ├── specs/              AI attribution, design notes, demo script
-├── potential_ideas/    Original idea docs (kept as spec)
 └── _reference/         Cloned upstream (ATS) — gitignored, reference only
 ```
 

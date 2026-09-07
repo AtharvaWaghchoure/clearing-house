@@ -5,6 +5,9 @@ node_modules/
 # reference clones (not part of this repo)
 _reference/
 
+# private idea/strategy notes — not published
+potential_ideas/
+
 # secrets
 .env
 .env.*
