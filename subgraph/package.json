@@ -1,0 +1,17 @@
+{
+  "name": "@clearing-house/subgraph",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLEARING HOUSE subgraph — composes MatchingEngine settlements with ATS identity/control events and reconstructs per-trade compliance.",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy:studio": "graph deploy clearing-house",
+    "create:local": "graph create --node http://localhost:8020/ clearing-house",
+    "deploy:local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 clearing-house"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.97.1",
+    "@graphprotocol/graph-ts": "^0.38.0"
+  }
+}

@@ -1,0 +1,59 @@
+# CLEARING HOUSE subgraph — composes two independent event streams into one queryable graph:
+#   1. MatchingEngine.SettlementReceipt   (what cleared)
+#   2. ATS identity/control events        (who was compliant, and when)
+# and reconstructs each settlement's compliance IN-MAPPING from the composed state.
+
+"A settlement asset or cash token the venue settles against."
+type Token @entity(immutable: false) {
+  id: Bytes! # token address
+  firstSeenBlock: BigInt!
+}
+
+"Identity-registry + control-list state for one account on one token, updated as events arrive."
+type TokenAccount @entity(immutable: false) {
+  id: Bytes! # token ++ account
+  token: Bytes!
+  account: Bytes!
+  verified: Boolean!
+  blocked: Boolean!
+  lastUpdatedBlock: BigInt!
+}
+
+"Append-only log of every identity/control change — the raw material for auditing."
+type ComplianceEvent @entity(immutable: true) {
+  id: Bytes! # txHash ++ logIndex
+  token: Bytes!
+  account: Bytes!
+  kind: String! # "verified" | "blocked"
+  status: Boolean!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  txHash: Bytes!
+}
+
+"One cleared DvP trade, with an INDEPENDENT compliance verdict reconstructed from the composed identity state at the settlement block."
+type Settlement @entity(immutable: true) {
+  id: Bytes! # tradeId
+  tradeId: Bytes!
+  bondToken: Bytes!
+  cashToken: Bytes!
+  seller: Bytes!
+  buyer: Bytes!
+  quantity: BigInt!
+  cashAmount: BigInt!
+  bondCode: Bytes! # EIP-1066 code recorded on-chain at settle time
+  cashCode: Bytes!
+  reconstructedCompliant: Boolean! # derived here from identity/control state, not from the venue
+  reason: String! # empty when compliant; else the failing checks
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  txHash: Bytes!
+}
+
+"Rolling venue totals — the number the demo's verifier holds the venue's claim against."
+type VenueStat @entity(immutable: false) {
+  id: Bytes! # engine address
+  settledCount: BigInt!
+  compliantCount: BigInt!
+  nonCompliantCount: BigInt!
+}

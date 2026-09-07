@@ -1,0 +1,73 @@
+specVersion: 1.0.0
+description: CLEARING HOUSE — composes MatchingEngine settlements with ATS identity/control events and reconstructs per-trade compliance.
+repository: https://github.com/AtharvaWaghchoure/clearing-house
+schema:
+  file: ./schema.graphql
+dataSources:
+  # (1) the venue: what actually cleared
+  - kind: ethereum
+    name: MatchingEngine
+    network: hedera-testnet
+    source:
+      # filled at deploy time (see networks.json); 0x0 keeps `graph build` valid pre-deploy
+      address: "0x0000000000000000000000000000000000000000"
+      abi: MatchingEngine
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/mappings.ts
+      entities: [Settlement, TokenAccount, VenueStat]
+      abis:
+        - name: MatchingEngine
+          file: ./abis/MatchingEngine.json
+      eventHandlers:
+        - event: SettlementReceipt(indexed bytes32,indexed address,indexed address,address,uint256,address,uint256,bytes1,bytes1)
+          handler: handleSettlementReceipt
+
+  # (2) the bond security: who was compliant, and when
+  - kind: ethereum
+    name: BondToken
+    network: hedera-testnet
+    source:
+      address: "0x0000000000000000000000000000000000000001"
+      abi: ATSToken
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/mappings.ts
+      entities: [TokenAccount, ComplianceEvent, Token]
+      abis:
+        - name: ATSToken
+          file: ./abis/ATSToken.json
+      eventHandlers:
+        - event: Verified(indexed address,bool)
+          handler: handleVerified
+        - event: Blocked(indexed address,bool)
+          handler: handleBlocked
+
+  # (3) the cash/deposit token: same identity/control stream, different asset
+  - kind: ethereum
+    name: CashToken
+    network: hedera-testnet
+    source:
+      address: "0x0000000000000000000000000000000000000002"
+      abi: ATSToken
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/mappings.ts
+      entities: [TokenAccount, ComplianceEvent, Token]
+      abis:
+        - name: ATSToken
+          file: ./abis/ATSToken.json
+      eventHandlers:
+        - event: Verified(indexed address,bool)
+          handler: handleVerified
+        - event: Blocked(indexed address,bool)
+          handler: handleBlocked

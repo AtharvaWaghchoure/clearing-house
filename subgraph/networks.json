@@ -1,0 +1,7 @@
+{
+  "hedera-testnet": {
+    "MatchingEngine": { "address": "0x0000000000000000000000000000000000000000", "startBlock": 0 },
+    "BondToken": { "address": "0x0000000000000000000000000000000000000001", "startBlock": 0 },
+    "CashToken": { "address": "0x0000000000000000000000000000000000000002", "startBlock": 0 }
+  }
+}

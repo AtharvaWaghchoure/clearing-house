@@ -1,0 +1,18 @@
+[
+  {
+    "type": "event",
+    "name": "SettlementReceipt",
+    "anonymous": false,
+    "inputs": [
+      { "name": "tradeId", "type": "bytes32", "indexed": true },
+      { "name": "bondToken", "type": "address", "indexed": true },
+      { "name": "seller", "type": "address", "indexed": true },
+      { "name": "buyer", "type": "address", "indexed": false },
+      { "name": "quantity", "type": "uint256", "indexed": false },
+      { "name": "cashToken", "type": "address", "indexed": false },
+      { "name": "cashAmount", "type": "uint256", "indexed": false },
+      { "name": "bondCode", "type": "bytes1", "indexed": false },
+      { "name": "cashCode", "type": "bytes1", "indexed": false }
+    ]
+  }
+]
