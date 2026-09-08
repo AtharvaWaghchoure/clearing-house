@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import { ISettlementLeg } from "../interfaces/ISettlementLeg.sol";
 import { IATSSecurity } from "../interfaces/ats/IATSSecurity.sol";
 import { Owned } from "../lib/Owned.sol";
+import { Eip1066 } from "../lib/Eip1066.sol";
 
 /// @title HederaHoldLeg
 /// @notice ISettlementLeg over a Hedera ATS `Hold`. This contract is named as the `escrow` when a
@@ -41,15 +42,23 @@ contract HederaHoldLeg is ISettlementLeg, Owned {
     }
 
     /// @inheritdoc ISettlementLeg
-    /// @dev Mirrors EXACTLY what `executeHoldByPartition` enforces: `onlyCompliant(address(0), _to,
-    ///      false)` — i.e. the recipient's identity/compliance/control, NOT the sender's free
-    ///      balance. Passing `address(0)` as `_from` is deliberate: the tokens are already locked in
-    ///      the hold, so checking the sender's (now-zero) free balance would falsely reject. Never
-    ///      reverts. See specs/ats-mechanism.md.
+    /// @dev Asks the ATS whether the RECIPIENT may receive, mirroring what `executeHoldByPartition`
+    ///      enforces (`onlyCompliant(address(0), _to, false)`), without tripping over the fact that the
+    ///      amount is already escrowed in the hold:
+    ///        - Query with the REAL sender `i.from` — the live ATS rejects a zero `_from` outright with
+    ///          `0x20 · ZeroAddressNotAllowed`, so `address(0)` cannot be used here.
+    ///        - The sender's FREE balance is (correctly) short because the amount sits in the hold; the
+    ///          ATS surfaces that as `0x54 · INSUFFICIENT_FUNDS`. That is not a compliance rejection —
+    ///          the hold guarantees delivery — so it is treated as passing.
+    ///        - Genuine identity/control failures (`0x10`, `0x16`) still block, with their named reason.
+    ///      Never reverts. See specs/ats-mechanism.md.
     function preflight(LegInstruction calldata i) external view returns (bool ok, bytes1 code, bytes32 reason) {
         bytes memory empty;
         (ok, code, reason) =
-            IATSSecurity(i.token).canTransferByPartition(address(0), i.to, i.partition, i.amount, empty, empty);
+            IATSSecurity(i.token).canTransferByPartition(i.from, i.to, i.partition, i.amount, empty, empty);
+        if (ok) return (ok, code, reason);
+        if (code == Eip1066.INSUFFICIENT_FUNDS) return (true, Eip1066.SUCCESS, bytes32(0));
+        return (false, code, reason);
     }
 
     /// @inheritdoc ISettlementLeg

@@ -88,16 +88,36 @@ reusing the on-chain BLR `0.0.9212226` as its business-logic resolver:
 
 `contracts/src/interfaces/ats/IATSFactory.sol` copies the `deployBond` config structs verbatim from
 ATS source (field order == ABI encoding); `verifier/src/deploy/ats-bond.ts` simulates then deploys.
-Because delivery is *any* ATS hold, the venue's `HederaHoldLeg` + `MatchingEngine` settle this real
-diamond with no code change — the `IATSSecurity` seam holds.
+
+### …and settled through the venue
+
+The same engine + leg then **clear that real diamond** — delivery is a genuine ATS hold executed by
+our leg as escrow (`verifier/src/deploy/ats-settle.ts`):
+
+| | |
+|---|---|
+| Settle tx | [`0xf85dffd7…`](https://hashscan.io/testnet/transaction/0xf85dffd72b438f340a870d8e191218802672a1884f7affb85469b20097a9c93a) · `SUCCESS`, tradeId `0x…0a75` |
+| Result | buyer's `balanceOfByPartition` on the ATS bond = **10** (delivered from the seller's ATS hold) |
+| Pre-flight | `bond 0x01 SUCCESS · cash 0x01 SUCCESS` — then atomic execute |
+| Engine / leg | `0x5246…83b6` / `0x0b55…d05e` (source-verified, exact match) |
+
+Flow: grant `ROLE_ISSUER`/`ROLE_KYC`/`ROLE_SSI_MANAGER` → `addIssuer` → `grantKyc(seller,buyer)` →
+`issue` → seller `createHoldByPartition(escrow = leg)` → `engine.settle`. Every hold/compliance
+signature matched our extracted `IATSSecurity` byte-for-byte, so **the venue contracts didn't change**
+— the `IATSSecurity` seam holds against real ATS.
+
+**One real correction it surfaced:** the live ATS `canTransferByPartition` rejects a zero `_from`
+(`0x20 · ZeroAddressNotAllowed`) and applies a free-balance check (`0x54` once the amount is escrowed
+in the hold) — both of which the mock permitted. `HederaHoldLeg.preflight` now queries with the real
+sender and treats `0x54` as passing (the hold guarantees delivery), while genuine identity/control
+failures (`0x10`/`0x16`) still block. Backward-compatible with the mock demo (15 Solidity tests green).
 
 ## Honest scope
 
-- The bond **settled** in the two atomic trades above is `MockATSSecurity` — a **faithful** stand-in
-  reproducing the ATS hold + compliance semantics verbatim (`executeHoldByPartition` gating on
-  `msg.sender == hold.escrow`, `onlyCompliant(0, to)`, the real `0x10 · AddressNotVerified`), verified
-  against source in [`specs/ats-mechanism.md`](../specs/ats-mechanism.md). Separately, a **real** bond
-  is now issued through the ATS Factory (above); wiring the venue to settle *that* diamond
-  end-to-end (mint + internal-KYC grants + hold) is the remaining lifecycle step.
+- The first two atomic trades settled `MockATSSecurity` (a faithful ATS stand-in). The venue **also
+  settles the real ATS-Factory bond** end-to-end (above), so the mock is a convenience for the
+  keyless local demo, not a dependency — the same engine + leg clear the real diamond.
+- The cash leg in the ATS settlement is a `MockATSSecurity` deposit token (the *payment* rail is the
+  swappable one by design); the *delivery* leg is the real ATS bond via a real ATS hold.
 - Fresh contracts are deployed per run for clean hold-id state; the addresses above are that run
   (and are the source-verified ones).

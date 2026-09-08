@@ -88,6 +88,7 @@ cd subgraph && pnpm codegen && pnpm build      # subgraph compiles to WASM
 | **Live on Hedera testnet** (deploy + 2 atomic settlements + rejection) | `verifier/src/deploy/hedera.ts` | ✅ [on-chain](docs/hedera-deployment.md) |
 | HashScan source verification (4/4 exact match) | `scripts/verify-hedera.sh` | ✅ Sourcify |
 | Real bond issued via ATS Factory `0.0.9213391` | `verifier/src/deploy/ats-bond.ts` | ✅ [`0x6e19…522a`](https://hashscan.io/testnet/contract/0x6e1983459281E1958D9Ca6E5bC4aBDe6A066522a) |
+| Real ATS bond **settled** through the venue (delivery via ATS hold) | `verifier/src/deploy/ats-settle.ts` | ✅ [settle tx](https://hashscan.io/testnet/transaction/0xf85dffd72b438f340a870d8e191218802672a1884f7affb85469b20097a9c93a) |
 | x402 NAV · Harness PR | — | ⏳ planned |
 
 See [`BUILD_PLAN.md`](BUILD_PLAN.md) for the full sequence and cut order.
