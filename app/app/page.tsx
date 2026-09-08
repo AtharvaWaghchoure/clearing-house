@@ -7,6 +7,7 @@ import SettlementPanel from '@/components/SettlementPanel';
 import SettlementTape from '@/components/SettlementTape';
 import VerifierPanel from '@/components/VerifierPanel';
 import KycConsole from '@/components/KycConsole';
+import ArcPanel from '@/components/ArcPanel';
 import { INSTRUMENT } from '@/lib/accounts';
 import type { Order } from '@/lib/types';
 import { createVenueStore, type VenueStore } from '@/lib/venue';
@@ -76,8 +77,9 @@ export default function Page() {
         </div>
       </div>
 
-      <div style={{ marginTop: 18 }}>
+      <div className="grid" style={{ marginTop: 18 }}>
         <VerifierPanel store={store} state={state} />
+        <ArcPanel />
       </div>
 
       <footer className="footer">

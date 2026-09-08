@@ -137,7 +137,7 @@ MatchingEngine.settle(orderA, orderB)
 - [ ] Harness: PR link + README explaining problem & how to run
 - [x] x402: ≥1 real paid request through **Blocky402** + README of the flow — tx `0.0.7162784@1788882998…` SUCCESS (`services/nav-x402/`)
 - [x] Graph: live data (subgraph indexing live Hedera + verifier on live logs), composition of 2+ products explicit (settlements + 2 ATS identity streams), reusable infra + `SKILL.md`
-- [ ] Arc: working frontend **and** backend + architecture diagram + name the bounty
+- [x] Arc: working frontend (`app/` order-book terminal + Arc panel) **and** backend (`app/app/api/arc`, `/api/venue/report`) + architecture diagram (`specs/architecture.md`) + named bounties (DeFi Pool · Agentic Economy · Testnet→Mainnet)
 - [ ] Arc mainnet: return Sep 16–30, post mainnet link/tx
 
 ## 6. Known risks (from spec)
