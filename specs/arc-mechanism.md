@@ -29,9 +29,21 @@ function memo(address target, bytes calldata data, bytes32 memoId, bytes calldat
 function callFrom(address sender, address target, bytes calldata data)
     external returns (bool success, bytes memory returnData);
 ```
-`Memo` (and `Multicall3From`) route their subcalls through this precompile, so inside the subcall
-`msg.sender` is **the address that called `memo()`** — i.e. our `ArcMemoLeg`. Payers therefore
-approve the leg (`address(this)`), which is exactly what `ArcMemoLeg.preflight` checks.
+`Memo` (and `Multicall3From`) route their subcalls through this precompile so the wrapped call runs
+as a spoofed sender.
+
+**Corrected against live Arc testnet (2026-09-08):** the precompile only lets an EOA spoof *itself* —
+the spoofed sender **must equal `tx.origin`**. A contract calling `memo()` reverts with
+`sender spoofing requires tx.origin as sender`. So **`Memo` is EOA-only**: the *payer* invokes it
+directly, and inside the subcall `msg.sender` is the **payer** (`tx.origin`), not the calling
+contract. (Our earlier source read had this backwards — it assumed the caller of `memo()` became the
+sender.) Consequently the Arc cash leg is **payer-initiated**: the payer submits
+`memo(USDC, transferFrom(payer, seller, amount), tradeId, meta)` (self-approved so the exact
+`transferFrom` the `ArcMemoLeg` encodes still runs), yielding `Transfer.from == payer`. `ArcMemoLeg`
+remains the reference for that calldata; it cannot itself invoke `memo()` on Arc.
+
+Second live gotcha: Circle's USDC **blocklists well-known test addresses** (e.g. the anvil default
+`0x7099…79C8`) — transfers to them revert `Blocked address`. Use fresh accounts.
 
 ## Why this is unportable (the Circle hostile-Q answer)
 Wrapping `USDC.transferFrom(payer, seller, amount)` in `memo(USDC, …, tradeId, meta)` yields, in ONE
@@ -50,6 +62,8 @@ chains, so cross-chain DvP is not claimed as atomic — the Arc leg proves the *
 [ats-mechanism.md](ats-mechanism.md).
 
 ## Mock note
-The unit test emulates the CallFrom precompile inside `MockUSDC.callFromExec` (only the Memo mock may
-invoke it), so `transferFrom`'s effective spender is the leg — identical to real Arc — and the test
-validates the true approval target, not a mock-only shortcut.
+The unit test emulates the CallFrom precompile inside `MockUSDC.callFromExec` with the leg as the
+effective spender — a simplification that pre-dates the live finding above. On real Arc the sender is
+`tx.origin` (the payer), so the leg's `transferFrom`-wrapping calldata is correct but is submitted by
+the payer, not the leg. The live path is verified in `verifier/src/deploy/arc.ts` /
+[`docs/arc-deployment.md`](../docs/arc-deployment.md).

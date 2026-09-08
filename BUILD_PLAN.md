@@ -95,11 +95,12 @@ MatchingEngine.settle(orderA, orderB)
 - [x] **Subgraph published + live** — deployed to a self-hosted Graph node (`subgraph/docker-compose.yml`, Hashio JSON-RPC) indexing live Hedera from `startBlock 40252086`; synced healthy, `latestBlock == chainHead`. Live query returns `settledCount 2 · compliantCount 2` and both settlements with `reconstructedCompliant: true` — composition of 2 products (settlements + ATS identity events from 2 tokens) reconstructed in-mapping. See `subgraph/README.md`.
 - **Accept:** ✅ verifier catches the injected lie by id on **live Hedera testnet data**; subgraph indexes the same live data and answers GraphQL — composition of 2+ products explicit.
 
-### Phase 4 — Arc leg (P2)  ✅ CONTRACT DONE / ⏳ deploy pending
+### Phase 4 — Arc leg (P2)  ✅ LIVE ON ARC TESTNET
 - [x] `ArcMemoLeg`: settle USDC through Arc `Memo` so `Transfer` emits from payer EOA with indexed trade ref — **6 tests pass**, CallFrom precompile emulated in the mock
-- [ ] Deploy on Arc testnet; architecture diagram; name the exact bounty in each Arc submission
+- [x] **Deployed + settled on Arc testnet** (`verifier/src/deploy/arc.ts`, chain 5042002): leg `0x2fc6…20dd`; settlement tx `0x3a72c47b…` success — `Transfer.from = payer EOA`, `Memo.memoId = tradeId` (indexed). See [`docs/arc-deployment.md`](docs/arc-deployment.md). Surfaced two live findings: Arc `Memo` is tx.origin-gated (payer-initiated, not contract-wrapped) and Circle USDC blocklists anvil test addresses.
+- [ ] Architecture diagram; name the exact bounty in each Arc submission (frontend/backend — Phase 6)
 - [ ] (Sep 16–30) push to Arc mainnet, post tx
-- **Accept:** USDC settlement tx on Arc carrying the trade id in an indexed log from the payer's own address.
+- **Accept:** ✅ USDC settlement tx on Arc carrying the trade id in an **indexed** `Memo` log, with the `Transfer` from the **payer's own address** — verified from the receipt.
 
 ### Phase 5 — Additive
 - [ ] Scheduled coupons/maturity via HSS `scheduleCall` (self-rescheduling; **guard the return value**)

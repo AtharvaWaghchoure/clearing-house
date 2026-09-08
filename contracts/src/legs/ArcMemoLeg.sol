@@ -17,6 +17,12 @@ import { Owned } from "../lib/Owned.sol";
 ///
 ///         Same `ISettlementLeg` as `HederaHoldLeg` — the MatchingEngine swaps rails with one
 ///         `setLegs`, no rewrite. See specs/arc-mechanism.md.
+///
+///         NOTE (verified on live Arc testnet, see docs/arc-deployment.md): Arc's `Memo` routes
+///         through the CallFrom precompile, which only lets an EOA spoof ITSELF (`sender == tx.origin`)
+///         — a contract that calls `memo()` reverts. So on real Arc the *payer* submits
+///         `memo(USDC, transferFrom(payer, seller, amount), tradeId, meta)` directly; this contract is
+///         the reference for that exact wrapped calldata, and `Transfer.from` is still the payer's EOA.
 contract ArcMemoLeg is ISettlementLeg, Owned {
     /// @notice Arc `Memo` contract (`0x5294E9927c3306DcBaDb03fe70b92e01cCede505` on testnet).
     IMemo public immutable memoContract;
