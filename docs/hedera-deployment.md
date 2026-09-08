@@ -74,13 +74,30 @@ compiles against `hedera-testnet` (`graph build --network hedera-testnet` → re
 `build/subgraph.yaml`). Publishing it to a hosted Graph node is the one remaining step (needs a
 graph-node endpoint / Studio deploy key).
 
+## Real bond issued via the ATS Factory
+
+A compliant bond issued through the **real** Hedera ATS Factory `0.0.9213391` (not the mock),
+reusing the on-chain BLR `0.0.9212226` as its business-logic resolver:
+
+| | |
+|---|---|
+| Bond diamond | `0x6e1983459281E1958D9Ca6E5bC4aBDe6A066522a` (`0.0.10418524`) — [HashScan](https://hashscan.io/testnet/contract/0x6e1983459281E1958D9Ca6E5bC4aBDe6A066522a) |
+| deployBond tx | [`0xfbadfcd2…`](https://hashscan.io/testnet/transaction/0xfbadfcd2dc0eda905ebd7b04f8c63983ca5d7d7fbda26a1d54d7803a7f0d4d2c) · `SUCCESS`, 6.98M gas |
+| Live facets | `name()` = "HELVETIA 4.25% 15FEB2031", `symbol()` = "HELV31", `decimals()` = 6, `isControllable()` = true |
+| Config | `BOND_CONFIG_ID` v1 · REG_S/NONE · `clearingActive=false` (holds enabled) · `ISIN US0378331005` |
+
+`contracts/src/interfaces/ats/IATSFactory.sol` copies the `deployBond` config structs verbatim from
+ATS source (field order == ABI encoding); `verifier/src/deploy/ats-bond.ts` simulates then deploys.
+Because delivery is *any* ATS hold, the venue's `HederaHoldLeg` + `MatchingEngine` settle this real
+diamond with no code change — the `IATSSecurity` seam holds.
+
 ## Honest scope
 
-- The bond here is `MockATSSecurity` — a **faithful** stand-in that reproduces the ATS hold +
-  compliance semantics verbatim (`executeHoldByPartition` gating on `msg.sender == hold.escrow`,
-  `onlyCompliant(0, to)`, the real `0x10 · AddressNotVerified`), verified against source in
-  [`specs/ats-mechanism.md`](../specs/ats-mechanism.md). Issuing the bond through the **real ATS
-  Factory** `0.0.9213391` (so the "issued via ATS" gate is literal, not just interface-faithful) is
-  the next step — the `ISettlementLeg`/`IATSSecurity` seam means the venue contracts don't change.
+- The bond **settled** in the two atomic trades above is `MockATSSecurity` — a **faithful** stand-in
+  reproducing the ATS hold + compliance semantics verbatim (`executeHoldByPartition` gating on
+  `msg.sender == hold.escrow`, `onlyCompliant(0, to)`, the real `0x10 · AddressNotVerified`), verified
+  against source in [`specs/ats-mechanism.md`](../specs/ats-mechanism.md). Separately, a **real** bond
+  is now issued through the ATS Factory (above); wiring the venue to settle *that* diamond
+  end-to-end (mint + internal-KYC grants + hold) is the remaining lifecycle step.
 - Fresh contracts are deployed per run for clean hold-id state; the addresses above are that run
   (and are the source-verified ones).

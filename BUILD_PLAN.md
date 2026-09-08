@@ -76,7 +76,7 @@ MatchingEngine.settle(orderA, orderB)
 - [x] `MatchingEngine.settle()`: pre-flight `canTransferByPartition` → revert with EIP-1066 code; execute both legs atomically; emit receipt
 - [x] Foundry tests vs **mock ATS**: (a) atomic DvP ✅, (b) KYC-revoked buyer → revert with the REAL `0x10 DISALLOWED_OR_STOP · AddressNotVerified` (doc's `0x56` was fictional) ✅, (c) one leg fails → whole tx reverts ✅ — **9 tests pass**
 - [x] Deploy/interaction script (viem + Hedera SDK) → Hedera testnet: `verifier/src/deploy/hedera.ts`. Provisions counterparties via `AccountCreateTransaction` (EVM value-transfer can't create Hedera accounts), deploys the venue, issues + KYCs, clears **two live atomic settlements**, and shows the KYC-revoked order refuse with `0x10 · AddressNotVerified`. Verified independently from the mirror node. See [`docs/hedera-deployment.md`](docs/hedera-deployment.md).
-- [ ] Issue the bond via the **real ATS Factory** `0.0.9213391` (current run uses the ATS-faithful `MockATSSecurity`; the `IATSSecurity` seam means the venue contracts don't change) — for the literal "issued via ATS" gate
+- [x] Issue the bond via the **real ATS Factory** `0.0.9213391` — live diamond `0x6e19…522a` (`0.0.10418524`), `name()`="HELVETIA 4.25% 15FEB2031", `symbol()`="HELV31"; `contracts/src/interfaces/ats/IATSFactory.sol` + `verifier/src/deploy/ats-bond.ts` (simulate → deploy). Settling *that* diamond through the venue (mint + KYC grants + hold) is the remaining lifecycle step.
 - [x] HashScan **source verification** — all four contracts source-verified on Sourcify (which HashScan reads) with an **exact bytecode match**; reproduce with `bash scripts/verify-hedera.sh`
 - **Accept:** ✅ met on testnet — two txs where both legs move (`0x9fa94842…`, `0xdf77edaa…`, both `SUCCESS`), and the same order rejecting with the *named* reason `0x10 · DISALLOWED_OR_STOP · AddressNotVerified`.
 
@@ -128,7 +128,7 @@ MatchingEngine.settle(orderA, orderB)
 
 ## 5. Compliance checklist (qualification gates)
 - [ ] Continuous commit history through the event
-- [ ] ATS used to issue/manage a tokenised asset on Hedera **testnet**
+- [x] ATS used to issue a tokenised asset on Hedera **testnet** — bond `0x6e19…522a` via Factory `0.0.9213391`
 - [x] Contracts **verified on HashScan** — 4/4 exact-match via Sourcify (`scripts/verify-hedera.sh`)
 - [ ] Video: issuance + configuration + ≥1 lifecycle op (transfer / compliance check / distribution)
 - [ ] Harness: PR link + README explaining problem & how to run
