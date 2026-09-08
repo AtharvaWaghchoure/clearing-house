@@ -86,13 +86,14 @@ MatchingEngine.settle(orderA, orderB)
 - [ ] Open PR to the harness repo with README + repro; link it
 - **Accept:** PR URL exists (unmerged fine).
 
-### Phase 3 — The Graph (P1)  ✅ CODE DONE · ✅ VERIFIER ON LIVE HEDERA · ⏳ subgraph hosted-deploy
+### Phase 3 — The Graph (P1)  ✅ DONE · verifier + subgraph both live on Hedera
 - [x] Subgraph: composes `SettlementReceipt` + ATS `Verified`/`Blocked` from both tokens; reconstructs compliance in-mapping — `graph codegen && graph build` pass
 - [x] Independent **verifier**: reconstructs "was trade N compliant?" from public logs, shares zero venue code — **5 tests pass**
 - [x] Agent-callable **MCP** wrapper (`audit_venue`/`verify_trade`/`list_settlements`) + `SKILL.md` — handshake verified
 - [x] Demo: fabricated trade → verifier flags it by id (runs in the local e2e)
 - [x] **Live on Hedera:** the verifier reads real `SettlementReceipt` + identity logs off Hedera (`src/deploy/hedera-audit.ts`), confirms both settlements, and catches the fabricated `0x…019d` by id; CLI + MCP point at Hedera via `.local/hedera-config.json`. Subgraph `networks.json` wired to the live addresses and compiles against `hedera-testnet`.
-- **Accept:** ✅ verifier catches the injected lie by id on **live Hedera testnet data** (not just anvil). Subgraph hosted-node publish is the one remaining step.
+- [x] **Subgraph published + live** — deployed to a self-hosted Graph node (`subgraph/docker-compose.yml`, Hashio JSON-RPC) indexing live Hedera from `startBlock 40252086`; synced healthy, `latestBlock == chainHead`. Live query returns `settledCount 2 · compliantCount 2` and both settlements with `reconstructedCompliant: true` — composition of 2 products (settlements + ATS identity events from 2 tokens) reconstructed in-mapping. See `subgraph/README.md`.
+- **Accept:** ✅ verifier catches the injected lie by id on **live Hedera testnet data**; subgraph indexes the same live data and answers GraphQL — composition of 2+ products explicit.
 
 ### Phase 4 — Arc leg (P2)  ✅ CONTRACT DONE / ⏳ deploy pending
 - [x] `ArcMemoLeg`: settle USDC through Arc `Memo` so `Transfer` emits from payer EOA with indexed trade ref — **6 tests pass**, CallFrom precompile emulated in the mock
@@ -134,7 +135,7 @@ MatchingEngine.settle(orderA, orderB)
 - [ ] Video: issuance + configuration + ≥1 lifecycle op (transfer / compliance check / distribution)
 - [ ] Harness: PR link + README explaining problem & how to run
 - [x] x402: ≥1 real paid request through **Blocky402** + README of the flow — tx `0.0.7162784@1788882998…` SUCCESS (`services/nav-x402/`)
-- [ ] Graph: live data, composition of 2+ products explicit, reusable infra + `SKILL.md`
+- [x] Graph: live data (subgraph indexing live Hedera + verifier on live logs), composition of 2+ products explicit (settlements + 2 ATS identity streams), reusable infra + `SKILL.md`
 - [ ] Arc: working frontend **and** backend + architecture diagram + name the bounty
 - [ ] Arc mainnet: return Sep 16–30, post mainnet link/tx
 

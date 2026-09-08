@@ -1,0 +1,43 @@
+# Self-hosted Graph node that indexes the CLEARING HOUSE subgraph off LIVE Hedera testnet via the
+# Hashio JSON-RPC relay. The network name `hedera-testnet` matches subgraph.yaml/networks.json.
+#
+#   docker compose up -d
+#   pnpm create:local && pnpm deploy:local     # deploy the subgraph
+#   open http://localhost:8000/subgraphs/name/clearing-house/graphql
+services:
+  graph-node:
+    image: graphprotocol/graph-node:v0.35.1
+    ports:
+      - '8000:8000' # GraphQL (queries)
+      - '8020:8020' # JSON-RPC admin (deploy)
+      - '8030:8030' # indexing status
+      - '8040:8040' # metrics
+    depends_on:
+      - ipfs
+      - postgres
+    environment:
+      postgres_host: postgres
+      postgres_user: graph-node
+      postgres_pass: let-me-in
+      postgres_db: graph-node
+      ipfs: 'ipfs:5001'
+      ethereum: 'hedera-testnet:https://testnet.hashio.io/api'
+      GRAPH_LOG: info
+      ETHEREUM_POLLING_INTERVAL: '2000'
+      GRAPH_ETH_CALL_BY_NUMBER: 'true'
+      ETHEREUM_REORG_THRESHOLD: '5'
+      ETHEREUM_ANCESTOR_COUNT: '5'
+  ipfs:
+    image: ipfs/kubo:v0.17.0
+    ports:
+      - '5001:5001'
+  postgres:
+    image: postgres:14
+    command: ['postgres', '-cshared_preload_libraries=pg_stat_statements', '-cmax_connections=200']
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: graph-node
+      POSTGRES_PASSWORD: let-me-in
+      POSTGRES_DB: graph-node
+      POSTGRES_INITDB_ARGS: '-E UTF8 --locale=C'

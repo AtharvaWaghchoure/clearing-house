@@ -82,7 +82,7 @@ cd subgraph && pnpm codegen && pnpm build      # subgraph compiles to WASM
 | `HederaHoldLeg` — ATS hold executor (escrow) | `contracts/src/legs/HederaHoldLeg.sol` | ✅ |
 | `ArcMemoLeg` — USDC via Arc `Memo` | `contracts/src/legs/ArcMemoLeg.sol` | ✅ 6 tests |
 | Independent verifier + agent-callable MCP | `verifier/` | ✅ 5 tests, MCP live |
-| Subgraph (composes settlements + compliance) | `subgraph/` | ✅ compiles |
+| Subgraph (composes settlements + compliance) | `subgraph/` | ✅ live on Hedera (self-hosted graph-node) |
 | Local end-to-end demo | `verifier/src/demo/e2e.ts` | ✅ runs |
 | Order-book terminal (book · pre-flight register · verifier) | `app/` | ✅ builds, frontend + backend |
 | **Live on Hedera testnet** (deploy + 2 atomic settlements + rejection) | `verifier/src/deploy/hedera.ts` | ✅ [on-chain](docs/hedera-deployment.md) |
