@@ -59,6 +59,11 @@ One command spins up anvil, deploys the venue, and plays all three demo moments:
    public logs (sharing no venue code), confirms the honest report, then flags a fabricated trade by
    id when the venue misreports.
 
+Or open the trading terminal — the live book, the pre-flight register, and the independent verifier:
+```bash
+pnpm --filter @clearing-house/app dev      # http://localhost:3737  (no keys)
+```
+
 Run the tests:
 ```bash
 cd contracts && forge test        # 15 Solidity tests
@@ -79,8 +84,9 @@ cd subgraph && pnpm codegen && pnpm build      # subgraph compiles to WASM
 | Independent verifier + agent-callable MCP | `verifier/` | ✅ 5 tests, MCP live |
 | Subgraph (composes settlements + compliance) | `subgraph/` | ✅ compiles |
 | Local end-to-end demo | `verifier/src/demo/e2e.ts` | ✅ runs |
+| Order-book terminal (book · pre-flight register · verifier) | `app/` | ✅ builds, frontend + backend |
 | Hedera testnet deploy + ATS issuance | `contracts/script/` | ⏳ needs a key |
-| Order-book frontend · x402 NAV · Harness PR | — | ⏳ planned |
+| x402 NAV · Harness PR | — | ⏳ planned |
 
 See [`BUILD_PLAN.md`](BUILD_PLAN.md) for the full sequence and cut order.
 
@@ -114,6 +120,7 @@ delegation).
 ## Repo layout
 ```
 contracts/   Foundry — settlement contracts, ATS/Arc interfaces, tests
+app/         Next.js order-book terminal (book · pre-flight register · verifier) + venue backend
 verifier/    Independent verifier + CLI + MCP + the anvil e2e demo (+ SKILL.md)
 subgraph/    The Graph subgraph (schema + mappings)
 specs/       Source-verified mechanism notes (ATS, Arc)

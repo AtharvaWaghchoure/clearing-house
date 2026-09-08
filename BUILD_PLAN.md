@@ -104,7 +104,7 @@ MatchingEngine.settle(orderA, orderB)
 - [ ] x402 NAV endpoint settled through Blocky402 (`https://api.testnet.blocky402.com`, **no `/v1`**, **not** `x402.org/facilitator`)
 
 ### Phase 6 — Product & submission polish
-- [ ] Order-book frontend (Next.js + viem): place holds, live book, compliance pre-flight banner showing the EIP-1066 reason before signing
+- [x] Order-book frontend (Next.js + viem) under `app/`: live book, atomic Match & Settle, compliance **pre-flight register** showing the named EIP-1066 reason before signing, swappable Hedera⇆Arc rail, independent-verifier panel (with a real venue backend that can be caught lying) — `next build` clean, backend API verified. Faithful in-browser model of the contract; live-mode viem path documented.
 - [ ] README leading with the `ISettlementLeg` seam
 - [ ] `/specs` + AI attribution; 2:00–4:00 demo video script
 - [ ] Fill the compliance checklist (§5)
