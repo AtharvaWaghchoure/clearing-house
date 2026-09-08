@@ -14,12 +14,16 @@ and shows the identical order refuse itself with the named reason.
 
 ## Deployment (run of 2026-09-08)
 
-| Contract | EVM address | HashScan |
-|---|---|---|
-| `MatchingEngine` | `0xa73690cb94d03ee05a68fd2de753964b73a7072a` | [contract](https://hashscan.io/testnet/contract/0xa73690cb94d03ee05a68fd2de753964b73a7072a) |
-| `HederaHoldLeg` (escrow) | `0x90775920812cc4726c75e651fe30bc2606f78dee` | [contract](https://hashscan.io/testnet/contract/0x90775920812cc4726c75e651fe30bc2606f78dee) |
-| Bond token (ATS-faithful) | `0x4f76877d98db72102127fab8b0a1e7fedf763604` | [contract](https://hashscan.io/testnet/contract/0x4f76877d98db72102127fab8b0a1e7fedf763604) |
-| Cash token (deposit) | `0xa6491faaf3f5ef0b582e2a865ca6e3b993d09f79` | [contract](https://hashscan.io/testnet/contract/0xa6491faaf3f5ef0b582e2a865ca6e3b993d09f79) |
+| Contract | EVM address | HashScan | Source |
+|---|---|---|---|
+| `MatchingEngine` | `0xa73690cb94d03ee05a68fd2de753964b73a7072a` | [contract](https://hashscan.io/testnet/contract/0xa73690cb94d03ee05a68fd2de753964b73a7072a) | ✅ exact match |
+| `HederaHoldLeg` (escrow) | `0x90775920812cc4726c75e651fe30bc2606f78dee` | [contract](https://hashscan.io/testnet/contract/0x90775920812cc4726c75e651fe30bc2606f78dee) | ✅ exact match |
+| Bond token (ATS-faithful) | `0x4f76877d98db72102127fab8b0a1e7fedf763604` | [contract](https://hashscan.io/testnet/contract/0x4f76877d98db72102127fab8b0a1e7fedf763604) | ✅ exact match |
+| Cash token (deposit) | `0xa6491faaf3f5ef0b582e2a865ca6e3b993d09f79` | [contract](https://hashscan.io/testnet/contract/0xa6491faaf3f5ef0b582e2a865ca6e3b993d09f79) | ✅ exact match |
+
+All four are **source-verified** on Sourcify (which HashScan reads) with an **exact bytecode match** —
+compiled with solc `0.8.24+commit.e11b9ed9`, optimizer 200, `evm_version=paris`. Reproduce with
+`bash scripts/verify-hedera.sh`.
 
 Accounts: operator `0.0.10413613` (`0x5eb6…5993`), seller `0.0.10417883` (`0x0B93…05Ac`), buyer
 `0.0.10417884` (`0xA32A…7e9E`).
@@ -58,5 +62,5 @@ GET .../contracts/results/0xdf77edaa…  →  status 0x1 · SUCCESS
   [`specs/ats-mechanism.md`](../specs/ats-mechanism.md). Issuing the bond through the **real ATS
   Factory** `0.0.9213391` (so the "issued via ATS" gate is literal, not just interface-faithful) is
   the next step — the `ISettlementLeg`/`IATSSecurity` seam means the venue contracts don't change.
-- Contracts are deployed but **not yet source-verified on HashScan** (a manual/`forge verify` step).
-- Fresh contracts are deployed per run for clean hold-id state; the addresses above are that run.
+- Fresh contracts are deployed per run for clean hold-id state; the addresses above are that run
+  (and are the source-verified ones).

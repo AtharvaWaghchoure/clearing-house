@@ -77,7 +77,7 @@ MatchingEngine.settle(orderA, orderB)
 - [x] Foundry tests vs **mock ATS**: (a) atomic DvP ✅, (b) KYC-revoked buyer → revert with the REAL `0x10 DISALLOWED_OR_STOP · AddressNotVerified` (doc's `0x56` was fictional) ✅, (c) one leg fails → whole tx reverts ✅ — **9 tests pass**
 - [x] Deploy/interaction script (viem + Hedera SDK) → Hedera testnet: `verifier/src/deploy/hedera.ts`. Provisions counterparties via `AccountCreateTransaction` (EVM value-transfer can't create Hedera accounts), deploys the venue, issues + KYCs, clears **two live atomic settlements**, and shows the KYC-revoked order refuse with `0x10 · AddressNotVerified`. Verified independently from the mirror node. See [`docs/hedera-deployment.md`](docs/hedera-deployment.md).
 - [ ] Issue the bond via the **real ATS Factory** `0.0.9213391` (current run uses the ATS-faithful `MockATSSecurity`; the `IATSSecurity` seam means the venue contracts don't change) — for the literal "issued via ATS" gate
-- [ ] HashScan **source verification** of the deployed contracts (`forge verify`/manual)
+- [x] HashScan **source verification** — all four contracts source-verified on Sourcify (which HashScan reads) with an **exact bytecode match**; reproduce with `bash scripts/verify-hedera.sh`
 - **Accept:** ✅ met on testnet — two txs where both legs move (`0x9fa94842…`, `0xdf77edaa…`, both `SUCCESS`), and the same order rejecting with the *named* reason `0x10 · DISALLOWED_OR_STOP · AddressNotVerified`.
 
 ### Phase 2 — Harness PR (P0, cheap)
@@ -128,7 +128,7 @@ MatchingEngine.settle(orderA, orderB)
 ## 5. Compliance checklist (qualification gates)
 - [ ] Continuous commit history through the event
 - [ ] ATS used to issue/manage a tokenised asset on Hedera **testnet**
-- [ ] Contracts **verified on HashScan** (manual)
+- [x] Contracts **verified on HashScan** — 4/4 exact-match via Sourcify (`scripts/verify-hedera.sh`)
 - [ ] Video: issuance + configuration + ≥1 lifecycle op (transfer / compliance check / distribution)
 - [ ] Harness: PR link + README explaining problem & how to run
 - [ ] x402: ≥1 real paid request through **Blocky402** + README of the flow
