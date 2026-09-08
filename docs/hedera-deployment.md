@@ -54,6 +54,26 @@ GET .../contracts/results/0x9fa94842…  →  status 0x1 · SUCCESS
 GET .../contracts/results/0xdf77edaa…  →  status 0x1 · SUCCESS
 ```
 
+## The independent index runs on this data
+
+The verifier reconstructs each settlement's compliance from Hedera's public logs — sharing no venue
+code — and reconciles it against the venue's report:
+
+```bash
+pnpm --filter @clearing-house/verifier exec tsx src/deploy/hedera-audit.ts
+# → reads 2 SettlementReceipt(s) + token identity logs from Hedera
+# → honest report:     both CONFIRMED_COMPLIANT (blocks 40252121 / 40252131)
+# → fabricated report: FABRICATED 0x…019d caught by id
+# writes .local/hedera-config.json + hedera-ledger.json, so the CLI / MCP point at Hedera:
+pnpm --filter @clearing-house/verifier exec tsx src/cli.ts audit \
+  --config .local/hedera-config.json --ledger .local/hedera-ledger.honest.json
+```
+
+The subgraph is wired to the same addresses (`subgraph/networks.json`, `startBlock 40252086`) and
+compiles against `hedera-testnet` (`graph build --network hedera-testnet` → real addresses in
+`build/subgraph.yaml`). Publishing it to a hosted Graph node is the one remaining step (needs a
+graph-node endpoint / Studio deploy key).
+
 ## Honest scope
 
 - The bond here is `MockATSSecurity` — a **faithful** stand-in that reproduces the ATS hold +

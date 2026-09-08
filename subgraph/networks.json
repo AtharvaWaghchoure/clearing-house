@@ -1,7 +1,7 @@
 {
   "hedera-testnet": {
-    "MatchingEngine": { "address": "0x0000000000000000000000000000000000000000", "startBlock": 0 },
-    "BondToken": { "address": "0x0000000000000000000000000000000000000001", "startBlock": 0 },
-    "CashToken": { "address": "0x0000000000000000000000000000000000000002", "startBlock": 0 }
+    "MatchingEngine": { "address": "0xa73690cb94d03ee05a68fd2de753964b73a7072a", "startBlock": 40252086 },
+    "BondToken": { "address": "0x4f76877d98db72102127fab8b0a1e7fedf763604", "startBlock": 40252086 },
+    "CashToken": { "address": "0xa6491faaf3f5ef0b582e2a865ca6e3b993d09f79", "startBlock": 40252086 }
   }
 }

@@ -85,12 +85,13 @@ MatchingEngine.settle(orderA, orderB)
 - [ ] Open PR to the harness repo with README + repro; link it
 - **Accept:** PR URL exists (unmerged fine).
 
-### Phase 3 — The Graph (P1)  ✅ CODE DONE / ⏳ live-data pending deploy
+### Phase 3 — The Graph (P1)  ✅ CODE DONE · ✅ VERIFIER ON LIVE HEDERA · ⏳ subgraph hosted-deploy
 - [x] Subgraph: composes `SettlementReceipt` + ATS `Verified`/`Blocked` from both tokens; reconstructs compliance in-mapping — `graph codegen && graph build` pass
 - [x] Independent **verifier**: reconstructs "was trade N compliant?" from public logs, shares zero venue code — **5 tests pass**
 - [x] Agent-callable **MCP** wrapper (`audit_venue`/`verify_trade`/`list_settlements`) + `SKILL.md` — handshake verified
 - [x] Demo: fabricated trade → verifier flags it by id (runs in the local e2e)
-- **Accept:** ✅ verifier catches the injected lie by id (local). Live subgraph query pending Hedera deploy.
+- [x] **Live on Hedera:** the verifier reads real `SettlementReceipt` + identity logs off Hedera (`src/deploy/hedera-audit.ts`), confirms both settlements, and catches the fabricated `0x…019d` by id; CLI + MCP point at Hedera via `.local/hedera-config.json`. Subgraph `networks.json` wired to the live addresses and compiles against `hedera-testnet`.
+- **Accept:** ✅ verifier catches the injected lie by id on **live Hedera testnet data** (not just anvil). Subgraph hosted-node publish is the one remaining step.
 
 ### Phase 4 — Arc leg (P2)  ✅ CONTRACT DONE / ⏳ deploy pending
 - [x] `ArcMemoLeg`: settle USDC through Arc `Memo` so `Transfer` emits from payer EOA with indexed trade ref — **6 tests pass**, CallFrom precompile emulated in the mock
