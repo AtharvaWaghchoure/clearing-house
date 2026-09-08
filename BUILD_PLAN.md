@@ -103,7 +103,7 @@ MatchingEngine.settle(orderA, orderB)
 ### Phase 5 — Additive
 - [ ] Scheduled coupons/maturity via HSS `scheduleCall` (self-rescheduling; **guard the return value**)
 - [ ] Chainlink HBAR/USD proxy `0x59bC155EB6c6C415fE43255aF66EcF0523c92B4a` for pricing
-- [ ] x402 NAV endpoint settled through Blocky402 (`https://api.testnet.blocky402.com`, **no `/v1`**, **not** `x402.org/facilitator`)
+- [x] **x402 NAV endpoint** settled through Blocky402 (`services/nav-x402/`) — `GET /nav` returns 402; an agent pays 0.1 HBAR via `@x402/fetch`+`@x402/hedera`, the server verifies+settles through Blocky402, returns the live NAV. **Real paid request on Hedera testnet:** tx `0.0.7162784@1788882998.808742657` SUCCESS (Blocky402 fee payer covered gas). Proof in `services/nav-x402/settlement-proof.json`.
 
 ### Phase 6 — Product & submission polish
 - [x] Order-book frontend (Next.js + viem) under `app/`: live book, atomic Match & Settle, compliance **pre-flight register** showing the named EIP-1066 reason before signing, swappable Hedera⇆Arc rail, independent-verifier panel (with a real venue backend that can be caught lying) — `next build` clean, backend API verified. Faithful in-browser model of the contract; live-mode viem path documented.
@@ -133,7 +133,7 @@ MatchingEngine.settle(orderA, orderB)
 - [x] Contracts **verified on HashScan** — 4/4 exact-match via Sourcify (`scripts/verify-hedera.sh`)
 - [ ] Video: issuance + configuration + ≥1 lifecycle op (transfer / compliance check / distribution)
 - [ ] Harness: PR link + README explaining problem & how to run
-- [ ] x402: ≥1 real paid request through **Blocky402** + README of the flow
+- [x] x402: ≥1 real paid request through **Blocky402** + README of the flow — tx `0.0.7162784@1788882998…` SUCCESS (`services/nav-x402/`)
 - [ ] Graph: live data, composition of 2+ products explicit, reusable infra + `SKILL.md`
 - [ ] Arc: working frontend **and** backend + architecture diagram + name the bounty
 - [ ] Arc mainnet: return Sep 16–30, post mainnet link/tx
