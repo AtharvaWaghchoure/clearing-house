@@ -85,7 +85,8 @@ cd subgraph && pnpm codegen && pnpm build      # subgraph compiles to WASM
 | Subgraph (composes settlements + compliance) | `subgraph/` | ✅ compiles |
 | Local end-to-end demo | `verifier/src/demo/e2e.ts` | ✅ runs |
 | Order-book terminal (book · pre-flight register · verifier) | `app/` | ✅ builds, frontend + backend |
-| Hedera testnet deploy + ATS issuance | `contracts/script/` | ⏳ needs a key |
+| **Live on Hedera testnet** (deploy + 2 atomic settlements + rejection) | `verifier/src/deploy/hedera.ts` | ✅ [on-chain](docs/hedera-deployment.md) |
+| Real ATS-Factory bond issuance · HashScan source-verify | — | ⏳ next |
 | x402 NAV · Harness PR | — | ⏳ planned |
 
 See [`BUILD_PLAN.md`](BUILD_PLAN.md) for the full sequence and cut order.

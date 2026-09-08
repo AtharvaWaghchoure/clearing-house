@@ -75,10 +75,10 @@ MatchingEngine.settle(orderA, orderB)
 - [x] `HederaHoldLeg` (execute an ATS `executeHoldByPartition` as escrow)
 - [x] `MatchingEngine.settle()`: pre-flight `canTransferByPartition` → revert with EIP-1066 code; execute both legs atomically; emit receipt
 - [x] Foundry tests vs **mock ATS**: (a) atomic DvP ✅, (b) KYC-revoked buyer → revert with the REAL `0x10 DISALLOWED_OR_STOP · AddressNotVerified` (doc's `0x56` was fictional) ✅, (c) one leg fails → whole tx reverts ✅ — **9 tests pass**
-- [ ] Deploy/interaction scripts (viem) → Hedera testnet, reusing BLR/Factory  ← execution-gated on a funded key
-- [ ] Issue a real bond via ATS Factory; place two holds; fire one `settle` tx
-- [ ] HashScan verification of my contracts
-- **Accept:** one testnet tx where both legs move; a second where the same order rejects with a *named* reason. (Local anvil e2e can prove the logic without a Hedera key.)
+- [x] Deploy/interaction script (viem + Hedera SDK) → Hedera testnet: `verifier/src/deploy/hedera.ts`. Provisions counterparties via `AccountCreateTransaction` (EVM value-transfer can't create Hedera accounts), deploys the venue, issues + KYCs, clears **two live atomic settlements**, and shows the KYC-revoked order refuse with `0x10 · AddressNotVerified`. Verified independently from the mirror node. See [`docs/hedera-deployment.md`](docs/hedera-deployment.md).
+- [ ] Issue the bond via the **real ATS Factory** `0.0.9213391` (current run uses the ATS-faithful `MockATSSecurity`; the `IATSSecurity` seam means the venue contracts don't change) — for the literal "issued via ATS" gate
+- [ ] HashScan **source verification** of the deployed contracts (`forge verify`/manual)
+- **Accept:** ✅ met on testnet — two txs where both legs move (`0x9fa94842…`, `0xdf77edaa…`, both `SUCCESS`), and the same order rejecting with the *named* reason `0x10 · DISALLOWED_OR_STOP · AddressNotVerified`.
 
 ### Phase 2 — Harness PR (P0, cheap)
 - [ ] Reproduce the harness gap (`CHAIN` validates nothing → `chainAssertions`)
