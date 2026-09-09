@@ -43,18 +43,18 @@ const SPECIMEN: Trade = {
 function tradeFromParams(sp: { get(k: string): string | null }): Trade | null {
   const t = sp.get('t');
   if (!t) return null;
-  const s = sp.get('s') ?? '';
-  const b = sp.get('b') ?? '';
-  const arc = sp.get('r') === 'arc';
+  const g = (k: string, fallback = '') => sp.get(k) ?? fallback; // param or default
+  const s = g('s');
+  const b = g('b');
   return {
     tradeId: t,
-    qty: sp.get('q') ?? '—',
-    cashUnits: Number(sp.get('c') ?? 0),
+    qty: g('q', '—'),
+    cashUnits: Number(g('c', '0')),
     seller: { name: deskName(s as Address), addr: s },
     buyer: { name: deskName(b as Address), addr: b },
-    bondCode: sp.get('bc') ?? '0x01',
-    cashCode: sp.get('cc') ?? '0x01',
-    railLabel: arc ? 'Arc · USDC via Memo' : 'Hedera · deposit-token hold',
+    bondCode: g('bc', '0x01'),
+    cashCode: g('cc', '0x01'),
+    railLabel: g('r') === 'arc' ? 'Arc · USDC via Memo' : 'Hedera · deposit-token hold',
   };
 }
 
