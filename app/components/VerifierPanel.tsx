@@ -8,7 +8,7 @@ import type { VenueStore, VenueState } from '@/lib/venue';
 
 type LieKind = 'none' | 'fabricate' | 'hide';
 
-// A trade id the venue will SWEAR cleared — but which has no on-chain receipt. Matches the fabricated
+// A trade id the venue claims cleared but which has no on-chain receipt. Matches the fabricated
 // entry in the local demo ledger (verifier/.local/venue-ledger.json → 0x…019d).
 const FABRICATED: Hex = '0x000000000000000000000000000000000000000000000000000000000000019d';
 

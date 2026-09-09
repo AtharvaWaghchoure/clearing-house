@@ -1,6 +1,6 @@
 // x402-gated NAV endpoint. GET /nav returns HTTP 402 with the payment terms; once the caller pays
 // (X-PAYMENT header), the resource server verifies + settles the payment through the Blocky402
-// facilitator on Hedera testnet, then returns the live NAV. HTTP just got paid.
+// facilitator on Hedera testnet, then returns the live NAV.
 
 import express from 'express';
 import { HTTPFacilitatorClient } from '@x402/core/server';

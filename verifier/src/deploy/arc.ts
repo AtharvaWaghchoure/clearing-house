@@ -1,11 +1,11 @@
 // Deploy the swappable payment rail (ArcMemoLeg) to Arc testnet and settle a USDC payment through
-// Arc's Memo contract — proving the property no other chain reproduces: one call emits an ERC-20
-// `Transfer` whose `from` is the PAYER's own address AND an indexed `Memo(memoId = tradeId)`, so a
-// settlement is reconcilable from public logs alone (protocol-level sender delegation via CallFrom).
+// Arc's Memo contract: one call emits an ERC-20 `Transfer` whose `from` is the payer's own address
+// and an indexed `Memo(memoId = tradeId)`, so a settlement is reconcilable from public logs alone
+// (protocol-level sender delegation via CallFrom).
 //
 // Arc uses USDC as the native gas token — fund the operator at https://faucet.circle.com (Arc Testnet)
 // before running. Same ISettlementLeg the Hedera venue uses; here `setEngine(operator)` lets the
-// operator drive the cash leg directly for the demo.
+// operator drive the cash leg directly.
 //
 // Run:  pnpm --filter @clearing-house/verifier exec tsx src/deploy/arc.ts
 
@@ -96,7 +96,6 @@ async function main() {
     return { hash, rc };
   };
 
-  // 1) deploy the leg + wire the operator as the driver
   console.log(bold('\n▸ deploy ArcMemoLeg'));
   const deployHash = await wallet.deployContract({ abi: ArcLeg.abi as Abi, bytecode: ArcLeg.bytecode, args: [operator.address, MEMO, USDC] });
   const dep = await pub.waitForTransactionReceipt({ hash: deployHash, ...wait });
@@ -113,7 +112,7 @@ async function main() {
   const transferData = encodeFunctionData({ abi: usdcAbi, functionName: 'transferFrom', args: [operator.address, RECIPIENT, AMOUNT] });
   const { hash, rc } = await send(MEMO, memoAbi, 'memo', [USDC, transferData, TRADE_ID, meta]);
 
-  // 4) prove the property from the receipt: Transfer.from == payer, and an indexed Memo(tradeId)
+  // prove it from the receipt: Transfer.from == payer, and an indexed Memo(tradeId)
   let transferFrom: string | undefined;
   let memoId: string | undefined;
   for (const log of rc.logs) {

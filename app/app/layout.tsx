@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Instrument_Serif, Martian_Mono } from 'next/font/google';
 import './globals.css';
 
-// Engraved serif nameplate against dense monospace data — the whole terminal's voice.
+// Display serif for nameplates; the monospace below carries the data grid.
 const serif = Instrument_Serif({
   weight: ['400'],
   style: ['normal', 'italic'],

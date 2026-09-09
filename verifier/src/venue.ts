@@ -1,6 +1,6 @@
-// A model of the venue's SELF-REPORTED ledger — the thing the verifier tries to falsify. In the
-// demo, the venue's honest report is derived from the chain; flipping a "lie" reproduces the classic
-// failure the venue asks institutions to just trust: a report that doesn't match settlement reality.
+// A model of the venue's self-reported ledger — the thing the verifier tries to falsify. The honest
+// report is derived from the chain; flipping a "lie" reproduces a report that doesn't match
+// settlement reality.
 
 import type { Address, Hex, OnChainSettlement, VenueClaim } from './types.js';
 

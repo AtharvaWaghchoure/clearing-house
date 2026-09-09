@@ -1,13 +1,13 @@
-// THE CAPSTONE: settle the REAL ATS-issued bond through the venue.
+// Settle the ATS-issued bond through the venue.
 //
-// The venue's HederaHoldLeg + MatchingEngine were written against the ATS hold/compliance interface
-// (canTransferByPartition, createHoldByPartition, executeHoldByPartition, Hold/HoldIdentifier) — the
-// real ATS diamond exposes those with the SAME signatures, so the same engine + leg clear a bond
-// minted through Factory 0.0.9213391. Delivery is a REAL ATS hold.
+// The HederaHoldLeg + MatchingEngine were written against the ATS hold/compliance interface
+// (canTransferByPartition, createHoldByPartition, executeHoldByPartition, Hold/HoldIdentifier); the
+// real ATS diamond exposes those with the same signatures, so the same engine + leg clear a bond
+// minted through Factory 0.0.9213391.
 //
-// On the real bond: grant issuer/kyc/ssi roles → register the SSI issuer → grantKyc(seller,buyer) →
-// issue to seller → seller places a hold with escrow = our leg. Cash leg is a deposit token. Then
-// engine.settle pre-flights (compliance) and executes both holds atomically, emitting SettlementReceipt.
+// Flow: grant issuer/kyc/ssi roles → register the SSI issuer → grantKyc(seller,buyer) → issue to
+// seller → seller places a hold with escrow = our leg. Cash leg is a deposit token. Then engine.settle
+// pre-flights and executes both holds atomically, emitting SettlementReceipt.
 //
 // Run:  pnpm --filter @clearing-house/verifier exec tsx src/deploy/ats-settle.ts
 
@@ -113,7 +113,6 @@ async function main() {
   console.log(bold('\n▍ Settle the REAL ATS bond through the venue\n'));
   console.log(`  bond(ATS)  ${bond}   ${dim('(issued via Factory 0.0.9213391)')}`);
 
-  // fresh venue with the real-ATS-correct preflight
   console.log(bold('\n▸ deploy venue (leg + engine)'));
   const leg = await deploy(HoldLeg, [operator.address]);
   const engine = await deploy(Engine, [operator.address, leg, leg, operator.address]);
@@ -123,7 +122,7 @@ async function main() {
   const now = BigInt(Math.floor(Date.now() / 1000));
   const validTo = now + 10n * 31_536_000n;
 
-  // 1) roles + KYC + issue on the REAL bond (idempotent; ATS reverts on re-grant/re-KYC)
+  // idempotent: ATS reverts on re-grant / re-KYC, so guard each step
   console.log(bold('\n▸ prepare the ATS bond (roles · KYC · issue)'));
   const ensureRole = async (role: Hex) => {
     if (!(await read('hasRole', [role, operator.address]))) await send(wOp, bond, bondAbi, 'grantRole', [role, operator.address]);
@@ -140,7 +139,6 @@ async function main() {
   await send(wOp, bond, bondAbi, 'issue', [seller.address, QTY, '0x']); // fresh free balance for the hold
   console.log(dim(`  issuer/kyc/ssi ready · KYC'd seller+buyer · issued ${QTY} to seller`));
 
-  // 2) deposit-token cash leg (mock), funded + KYC'd
   console.log(bold('\n▸ cash leg (deposit token)'));
   const cash = await deploy(MockATS, ['USD Deposit Token']);
   await send(wOp, cash, MockATS.abi, 'mint', [P, buyer.address, CASH * 10n]);
@@ -148,7 +146,7 @@ async function main() {
   await send(wOp, cash, MockATS.abi, 'setVerified', [buyer.address, true]);
   console.log(dim(`  cash ${cash}`));
 
-  // 3) place holds (escrow = our leg); capture the assigned holdIds via simulate
+  // capture the assigned holdIds via simulate before sending
   console.log(bold('\n▸ place holds (escrow = venue leg)'));
   const holdExp = now + 31_536_000n;
   const bondHold = { amount: QTY, expirationTimestamp: holdExp, escrow: leg, to: ZERO, data: '0x' as Hex };
@@ -161,7 +159,6 @@ async function main() {
   await send(wBuyer, cash, MockATS.abi, 'createHoldByPartition', [P, cashHold]);
   console.log(dim(`  seller held the ATS bond (holdId ${bondHoldId}), buyer held the cash (holdId ${cashHoldId})`));
 
-  // 4) pre-flight + settle atomically
   console.log(bold('\n▸ settle'));
   const trade = {
     bond: { token: bond, from: seller.address, to: buyer.address, amount: QTY, partition: P, holdId: bondHoldId, tradeId: TRADE_ID, extra: '0x' as Hex },

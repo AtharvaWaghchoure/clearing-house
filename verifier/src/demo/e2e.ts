@@ -74,7 +74,6 @@ async function main() {
   const startBlock = await pub.getBlockNumber();
   console.log(bold('\n▍ CLEARING HOUSE — local end-to-end demo\n'));
 
-  // --- deploy ---
   const bond = await deploy(wOp, MockATS, ['ACME 5.5% 2030 Bond']);
   const cash = await deploy(wOp, MockATS, ['USD Deposit Token']);
   const holdLeg = await deploy(wOp, HoldLeg, [operator.address]);
@@ -82,7 +81,6 @@ async function main() {
   await send(wOp, holdLeg, HoldLeg.abi, 'setEngine', [engine]);
   console.log(dim(`  bond   ${bond}\n  cash   ${cash}\n  leg    ${holdLeg}\n  engine ${engine}`));
 
-  // --- issue + KYC ---
   await send(wOp, bond, MockATS.abi, 'mint', [P, seller.address, 1000n]);
   await send(wOp, cash, MockATS.abi, 'mint', [P, buyer.address, 100000n]);
   for (const token of [bond, cash]) {
@@ -113,7 +111,6 @@ async function main() {
       { amount: CASH, expirationTimestamp: 0n, escrow: holdLeg, to: ZERO, data: '0x' },
     ]);
 
-  // --- MOMENT 1: three compliant settlements, each one tx, both legs ---
   console.log(bold('\n① one tx · delivery ∧ payment'));
   for (let i = 1; i <= 3; i++) {
     await placeBondHold();
@@ -126,7 +123,6 @@ async function main() {
     console.log(`   settled ${cyan(tid(i).slice(0, 10) + '…')}  ${dim('bond→buyer ∧ cash→seller, atomic')}`);
   }
 
-  // --- MOMENT 2: revoke KYC, same order refuses itself with the real named reason ---
   console.log(bold('\n② revoke KYC → the identical order rejects (named reason, pre-signature)'));
   await placeBondHold(); // holdId 4
   await placeCashHold(); // holdId 4
@@ -151,7 +147,6 @@ async function main() {
     console.log(`   settle() reverted ${dim('— the venue cannot fill a non-compliant trade')}`);
   }
 
-  // --- MOMENT 3: the independent verifier catches the venue lying ---
   console.log(bold('\n③ independent verifier (reads the chain, shares no venue code)'));
   const ds = new ChainDataSource({ rpcUrl: RPC, engine, tokens: [bond, cash], fromBlock: startBlock, label: 'anvil' });
   const onchain = await ds.getSettlements();
@@ -163,7 +158,7 @@ async function main() {
   console.log(dim(`\n   venue's report with ONE fabricated trade (${tid(413).slice(0, 10)}…):`));
   console.log(formatReport(await audit(ds, lying)));
 
-  // --- persist for the CLI / MCP / frontend ---
+  // persist for the CLI / MCP / frontend
   const here = dirname(fileURLToPath(import.meta.url));
   const outDir = resolve(here, '../../.local');
   mkdirSync(outDir, { recursive: true });

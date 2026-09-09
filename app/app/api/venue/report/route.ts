@@ -1,12 +1,7 @@
-// THE VENUE'S BACKEND — its self-reporting API.
-//
-// This is the "trust me" surface every settlement venue offers: an endpoint that returns what the
-// venue SAYS cleared. It is deliberately the place a lie can enter. The frontend verifier panel calls
-// this, then independently reconstructs the truth from public chain facts and reconciles the two — so
-// when the venue's backend fabricates, hides, or misreports a trade, the independent index catches it.
-//
-// (Satisfies the Arc "working frontend AND backend" gate: settlement + reporting on the server,
-// independent verification on the client.)
+// The venue's self-reporting API — the endpoint that returns what the venue says cleared, and thus
+// the place a lie can enter. The frontend verifier panel calls this, independently reconstructs the
+// truth from public chain facts, and reconciles the two: a fabricated, hidden, or misreported trade
+// gets caught.
 
 import { NextResponse } from 'next/server';
 import type { Address, Hex, VenueClaim } from '@/lib/types';

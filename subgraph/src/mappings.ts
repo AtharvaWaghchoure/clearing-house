@@ -42,7 +42,7 @@ function logCompliance(token: Bytes, account: Bytes, kind: string, status: boole
   ce.save();
 }
 
-// --- identity / control-list stream (both token data sources) ---
+// identity / control-list stream, from both token data sources
 
 export function handleVerified(event: Verified): void {
   touchToken(event.address, event.block.number);
@@ -62,7 +62,7 @@ export function handleBlocked(event: Blocked): void {
   logCompliance(event.address, event.params.account, 'blocked', event.params.status, event);
 }
 
-// --- settlement stream, with in-mapping compliance reconstruction ---
+// settlement stream, with in-mapping compliance reconstruction
 
 function eligible(token: Bytes, account: Bytes): boolean {
   const ta = TokenAccount.load(taId(token, account));

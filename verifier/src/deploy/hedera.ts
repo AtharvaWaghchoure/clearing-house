@@ -107,7 +107,7 @@ async function main() {
 
   const operator = privateKeyToAccount(OP_KEY);
 
-  // --- seller/buyer: reuse persisted throwaway keys, or mint new ones ---
+  // seller/buyer: reuse persisted throwaway keys, or mint new ones
   mkdirSync(LOCAL, { recursive: true });
   const accPath = `${LOCAL}/hedera-accounts.json`;
   let acc: { seller: Hex; buyer: Hex };
@@ -169,7 +169,6 @@ async function main() {
     return { hash, status: rc.status };
   };
 
-  // --- provision seller + buyer via the Hedera SDK ---
   // An EVM value-transfer to a fresh address does NOT create an account on Hedera; the native
   // AccountCreate (with the ECDSA key's EVM alias) does, yielding an account the relay can transact
   // from once the mirror node indexes it.
@@ -200,7 +199,6 @@ async function main() {
   const HoldLeg = loadArtifact('HederaHoldLeg');
   const Engine = loadArtifact('MatchingEngine');
 
-  // --- deploy the venue ---
   console.log(bold('\n▸ deploy'));
   const bond = await deploy('bond', MockATS, ['HELVETIA 4.25% 15FEB2031'], 3_500_000n);
   const cash = await deploy('cash', MockATS, ['USD Deposit Token'], 3_500_000n);
@@ -208,7 +206,6 @@ async function main() {
   const engine = await deploy('engine', Engine, [operator.address, holdLeg, holdLeg, operator.address], 2_500_000n);
   await send(wOp, holdLeg, HoldLeg.abi, 'setEngine', [engine]);
 
-  // --- issue + KYC ---
   console.log(bold('\n▸ issue + KYC'));
   await send(wOp, bond, MockATS.abi, 'mint', [P, seller.address, 1000n]);
   await send(wOp, cash, MockATS.abi, 'mint', [P, buyer.address, 100000n]);
@@ -240,7 +237,6 @@ async function main() {
       { amount: CASH, expirationTimestamp: 0n, escrow: holdLeg, to: ZERO, data: '0x' },
     ]);
 
-  // --- MOMENT 1: real atomic settlements ---
   console.log(bold('\n① one tx · delivery ∧ payment  (live on Hedera)'));
   const settlements: { tradeId: Hex; tx: Hex }[] = [];
   for (let i = 1; i <= 2; i++) {
@@ -256,7 +252,6 @@ async function main() {
     console.log(`  settled ${cyan(tid(i).slice(0, 10) + '…')}  ${dim('bond→buyer ∧ cash→seller, atomic')}  ${dim(txUrl(r.hash))}`);
   }
 
-  // --- MOMENT 2: revoke KYC, identical order rejects with the named reason before signing ---
   console.log(bold('\n② revoke KYC → identical order rejects (named reason, pre-signature)'));
   await placeBondHold(); // holdId 3
   await placeCashHold(); // holdId 3
@@ -284,7 +279,6 @@ async function main() {
   console.log(rejected ? green('  settle() refused — the venue cannot fill a non-compliant trade') : red('  ⚠ settle unexpectedly succeeded'));
   await send(wOp, bond, MockATS.abi, 'setVerified', [buyer.address, true]); // restore for reuse
 
-  // --- persist ---
   const out = {
     network: 'hedera-testnet',
     chainId: hederaTestnet.id,

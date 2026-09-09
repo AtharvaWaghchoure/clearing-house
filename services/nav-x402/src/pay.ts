@@ -1,7 +1,7 @@
 // An agent that pays for the NAV. Uses @x402/fetch + @x402/hedera to auto-handle the 402: it reads
 // the payment terms, builds a partially-signed Hedera transfer (operator → payTo), and lets the
 // Blocky402 facilitator add the fee-payer signature and settle. Then it prints the NAV it bought and
-// the on-chain settlement tx — the qualifying paid request.
+// the on-chain settlement tx.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';

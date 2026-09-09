@@ -1,18 +1,16 @@
-// Issue a REAL compliant bond through the live Hedera ATS Factory (0.0.9213391) — the literal
-// "tokenised asset issued via ATS" path. The venue's ISettlementLeg/IATSSecurity seam means the
-// MatchingEngine + HederaHoldLeg settle this ATS diamond with no change (delivery is any ATS hold).
+// Issue a compliant bond through the live Hedera ATS Factory (0.0.9213391).
 //
-// Field values are copied from the ATS repo's own working fixtures
-// (test/fixtures/tokens/{bond,common}.fixture.ts): resolver = the reused BLR, config key BOND_CONFIG_ID
-// version 1, REG_S/NONE, clearingActive=false (so our holds work), internal KYC on. We simulate first
-// (predicts the diamond address + surfaces any revert before spending gas), then deploy.
+// Field values mirror the ATS repo's working fixtures (test/fixtures/tokens/{bond,common}.fixture.ts):
+// resolver = the reused BLR, config key BOND_CONFIG_ID version 1, REG_S/NONE, clearingActive=false (so
+// holds work), internal KYC on. Simulate first (predicts the diamond address, surfaces a revert before
+// spending gas), then deploy.
 //
 // Run:  pnpm --filter @clearing-house/verifier exec tsx src/deploy/ats-bond.ts
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type Abi, createPublicClient, createWalletClient, decodeEventLog, http } from 'viem';
+import { type Abi, type Log, createPublicClient, createWalletClient, decodeEventLog, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { hederaTestnet } from 'viem/chains';
 import { loadArtifact } from '../abi.js';
@@ -42,30 +40,28 @@ function loadEnv() {
   }
 }
 
-async function main() {
-  loadEnv();
+// Read + validate the deploy env before we build any client or spend gas.
+function requireEnv() {
   const RPC = process.env.HEDERA_RPC ?? 'https://testnet.hashio.io/api';
   const OP_KEY = process.env.HEDERA_OPERATOR_KEY as Hex;
   const FACTORY = process.env.ATS_FACTORY_EVM as Address;
   const BLR = process.env.ATS_BLR_EVM as Address;
   if (!/^0x[0-9a-fA-F]{64}$/.test(OP_KEY ?? '')) throw new Error('HEDERA_OPERATOR_KEY missing/invalid');
   if (!FACTORY || !BLR) throw new Error('ATS_FACTORY_EVM / ATS_BLR_EVM missing in .env');
+  return { RPC, OP_KEY, FACTORY, BLR };
+}
 
-  const pub = createPublicClient({ chain: hederaTestnet, transport: http(RPC) });
-  const operator = privateKeyToAccount(OP_KEY);
-  const wallet = createWalletClient({ account: operator, chain: hederaTestnet, transport: http(RPC) });
-  const Factory = loadArtifact('IATSFactory');
-
-  const now = BigInt(Math.floor(Date.now() / 1000));
+// The deployBond payload — values mirror the ATS repo's own working fixtures (see file header).
+// No branches: it's a data literal parameterised by the operator (admin + rbac) and issuance time.
+function buildBond(operatorAddress: Address, blr: Address, now: bigint) {
   const YEAR = 31_536_000n;
-
   const bondData = {
     security: {
-      resolver: BLR,
+      resolver: blr,
       maxSupply: MAX_UINT256,
       resolverProxyConfiguration: { key: BOND_CONFIG_ID, version: 1n },
       erc20MetadataInfo: { name: 'HELVETIA 4.25% 15FEB2031', symbol: 'HELV31', isin: 'US0378331005', decimals: 6 },
-      rbacs: [{ role: DEFAULT_ADMIN_ROLE, members: [operator.address] }],
+      rbacs: [{ role: DEFAULT_ADMIN_ROLE, members: [operatorAddress] }],
       externalPauses: [] as Address[],
       externalControlLists: [] as Address[],
       externalKycLists: [] as Address[],
@@ -98,12 +94,42 @@ async function main() {
       info: 'CLEARING HOUSE — demo bond issued via ATS Factory',
     },
   };
+  return { bondData, regulation };
+}
+
+// Pull the deployed diamond address out of the BondDeployed event, falling back to the simulated
+// prediction if the event isn't present (the address is deterministic, so the two agree).
+function bondAddressFromLogs(logs: Log[], abi: Abi, fallback: Address): Address {
+  for (const log of logs) {
+    try {
+      const d = decodeEventLog({ abi, data: log.data, topics: log.topics });
+      if (d.eventName === 'BondDeployed') {
+        return ((d.args as unknown as Record<string, unknown>).bondAddress as Address) ?? fallback;
+      }
+    } catch {
+      /* not our event */
+    }
+  }
+  return fallback;
+}
+
+async function main() {
+  loadEnv();
+  const { RPC, OP_KEY, FACTORY, BLR } = requireEnv();
+
+  const pub = createPublicClient({ chain: hederaTestnet, transport: http(RPC) });
+  const operator = privateKeyToAccount(OP_KEY);
+  const wallet = createWalletClient({ account: operator, chain: hederaTestnet, transport: http(RPC) });
+  const Factory = loadArtifact('IATSFactory');
+
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const { bondData, regulation } = buildBond(operator.address, BLR, now);
 
   console.log(`\n▍ Issuing a bond via the real ATS Factory ${FACTORY}\n`);
   console.log(`  operator ${operator.address}`);
   console.log(`  resolver(BLR) ${BLR}  ·  config ${BOND_CONFIG_ID.slice(0, 6)}…02 v1  ·  REG_S`);
 
-  // 1) simulate — validates the call and predicts the diamond address without spending gas
+  // simulate: validate the call + predict the diamond address without spending gas
   let predicted: Address;
   try {
     const sim = await pub.simulateContract({
@@ -121,7 +147,6 @@ async function main() {
     process.exit(1);
   }
 
-  // 2) deploy for real
   console.log(`  deploying…`);
   const hash = await wallet.writeContract({
     address: FACTORY,
@@ -133,19 +158,7 @@ async function main() {
   const rc = await pub.waitForTransactionReceipt({ hash, timeout: 180_000, pollingInterval: 2_000 });
   if (rc.status !== 'success') throw new Error(`deployBond reverted on-chain (${txUrl(hash)})`);
 
-  // 3) confirm the bond address from the BondDeployed event
-  let bond: Address = predicted;
-  for (const log of rc.logs) {
-    try {
-      const d = decodeEventLog({ abi: Factory.abi as Abi, data: log.data, topics: log.topics });
-      if (d.eventName === 'BondDeployed') {
-        bond = ((d.args as Record<string, unknown>).bondAddress as Address) ?? predicted;
-        break;
-      }
-    } catch {
-      /* not our event */
-    }
-  }
+  const bond = bondAddressFromLogs(rc.logs, Factory.abi as Abi, predicted);
 
   mkdirSync(LOCAL, { recursive: true });
   const out = {

@@ -90,17 +90,17 @@ contract MatchingEngine is IClearingHouse, Owned {
         if (t.bond.tradeId != t.cash.tradeId) revert TradeIdMismatch(t.bond.tradeId, t.cash.tradeId);
         tradeId = t.bond.tradeId;
 
-        // 1. compliance pre-flight — the whole point of the demo: reject with a named reason.
+        // compliance pre-flight — reject with a named reason
         (bool okB, bytes1 bondCode, bytes32 bondReason) = deliveryLeg.preflight(t.bond);
         if (!okB) revert LegNotCompliant(0, bondCode, bondReason);
         (bool okC, bytes1 cashCode, bytes32 cashReason) = paymentLeg.preflight(t.cash);
         if (!okC) revert LegNotCompliant(1, cashCode, cashReason);
 
-        // 2. atomic execution — both legs or neither.
+        // atomic execution — both legs or neither
         deliveryLeg.execute(t.bond);
         paymentLeg.execute(t.cash);
 
-        // 3. canonical receipt for the independent verifier.
+        // canonical receipt for the independent verifier
         settledCount++;
         emit SettlementReceipt(
             tradeId,
