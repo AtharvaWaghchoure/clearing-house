@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { deskName, INSTRUMENT } from '@/lib/accounts';
 import { cashStr, qtyStr, shortId, blockStr } from '@/lib/format';
 import type { VenueState } from '@/lib/venue';
@@ -22,7 +23,14 @@ export default function SettlementTape({ state }: { state: VenueState }) {
           <div className="empty">No settlements yet — match a bid against an ask.</div>
         ) : (
           rows.map((s) => (
-            <div key={s.tradeId} className="tape-row">
+            <Link
+              key={s.tradeId}
+              href={`/receipt?t=${s.tradeId}&s=${s.seller}&b=${s.buyer}&q=${s.quantity}&c=${s.cashAmount}&bc=${s.bondCode}&cc=${s.cashCode}&r=${s.rail}`}
+              className="tape-row"
+              target="_blank"
+              rel="noreferrer"
+              title="Open settlement certificate ↗"
+            >
               <span className="tid">{shortId(s.tradeId)}</span>
               <span className="flow">
                 {deskName(s.seller)}
@@ -43,7 +51,7 @@ export default function SettlementTape({ state }: { state: VenueState }) {
                 <span className="chip ok">{s.cashCode}</span>
                 <span className="chip rail">{s.rail === 'arc' ? 'ARC' : 'HDR'}</span>
               </span>
-            </div>
+            </Link>
           ))
         )}
       </div>

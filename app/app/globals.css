@@ -1035,3 +1035,972 @@ a {
   height: 1px;
   background: var(--line);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COVER — the venue's front door. A banknote-grade engraved plate: giant serif
+   nameplate, corner registration marks, and the atomic delivery-vs-payment
+   thesis drawn as two legs converging on a stamped brass seal. Orchestrated
+   staggered reveal on load, then it opens into the terminal.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.cover {
+  position: relative;
+  min-height: 100vh;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 30px 40px 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* corner registration / crop marks */
+.cover .reg {
+  position: fixed;
+  width: 24px;
+  height: 24px;
+  border: 0 solid var(--gold-line);
+  z-index: 5;
+  opacity: 0;
+  animation: cov-in 0.9s ease 0.1s forwards;
+}
+.cover .reg.tl {
+  top: 20px;
+  left: 20px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.cover .reg.tr {
+  top: 20px;
+  right: 20px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.cover .reg.bl {
+  bottom: 20px;
+  left: 20px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.cover .reg.br {
+  bottom: 20px;
+  right: 20px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+/* top identity rule */
+.cover-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line-2);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  opacity: 0;
+  animation: cov-in 0.7s ease 0.05s forwards;
+}
+.cover-top .ct-r {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.cover-top .plate {
+  color: var(--faint);
+}
+
+/* hero */
+.cover-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 46px 0;
+}
+.cover .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: cov-in 0.7s ease 0.18s forwards;
+}
+
+.cover-name {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 0.82;
+  letter-spacing: 0.004em;
+}
+.cover-name .l1,
+.cover-name .l2 {
+  display: block;
+  font-size: clamp(66px, 12.5vw, 172px);
+  clip-path: inset(0 0 102% 0);
+  opacity: 0;
+}
+.cover-name .l1 {
+  animation: cov-rise 1.05s cubic-bezier(0.16, 0.75, 0.2, 1) 0.28s forwards;
+}
+.cover-name .l2 {
+  margin-left: 0.055em;
+  animation: cov-rise 1.05s cubic-bezier(0.16, 0.75, 0.2, 1) 0.42s forwards;
+}
+.cover-name em {
+  font-style: italic;
+  color: var(--gold-2);
+}
+
+.cover-rule {
+  height: 1px;
+  width: 100%;
+  max-width: 760px;
+  margin: 30px 0 26px;
+  background: linear-gradient(90deg, var(--gold-line), var(--line-3) 34%, transparent 82%);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: cov-draw 1.15s cubic-bezier(0.16, 0.75, 0.2, 1) 0.62s forwards;
+}
+
+.cover-thesis {
+  max-width: 600px;
+  font-size: 14px;
+  line-height: 1.72;
+  color: var(--ink-2);
+  opacity: 0;
+  animation: cov-in 0.85s ease 0.78s forwards;
+}
+.cover-thesis b {
+  color: var(--ink);
+  font-weight: 400;
+  border-bottom: 1px solid var(--gold-line);
+  padding-bottom: 1px;
+}
+.cover-thesis .amp {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--gold-2);
+  font-size: 1.15em;
+}
+
+/* delivery-vs-payment diagram */
+.dvp {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  margin: 52px 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+.dvp .leg {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  align-items: center;
+  gap: 18px;
+}
+.dvp .leg .who {
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  opacity: 0;
+  animation: cov-in 0.6s ease 0.9s forwards;
+}
+.dvp .leg .who.r {
+  text-align: right;
+}
+.dvp .leg .track {
+  position: relative;
+  height: 1px;
+}
+.dvp .leg .track .line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--line-3), var(--gold-line));
+  transform: scaleX(0);
+}
+.dvp .leg-bond .track .line {
+  transform-origin: left;
+  animation: cov-draw 0.95s cubic-bezier(0.16, 0.75, 0.2, 1) 1s forwards;
+}
+.dvp .leg-cash .track .line {
+  background: linear-gradient(90deg, var(--gold-line), var(--line-3));
+  transform-origin: right;
+  animation: cov-draw 0.95s cubic-bezier(0.16, 0.75, 0.2, 1) 1.12s forwards;
+}
+.dvp .leg .track .what {
+  position: absolute;
+  top: -17px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  color: var(--dim);
+  opacity: 0;
+  animation: cov-in 0.6s ease 1.5s forwards;
+}
+.dvp .leg .track .tip {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-top: 1px solid var(--gold-2);
+  border-right: 1px solid var(--gold-2);
+  opacity: 0;
+  animation: cov-in 0.4s ease 1.7s forwards;
+}
+.dvp .leg-bond .tip {
+  right: 0;
+  transform: translateY(-50%) rotate(45deg);
+}
+.dvp .leg-cash .tip {
+  left: 0;
+  transform: translateY(-50%) rotate(225deg);
+}
+
+/* the stamped seal at the crossing */
+.dvp .seal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 128px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-line);
+  background: radial-gradient(circle at 50% 34%, rgba(201, 169, 74, 0.16), var(--panel) 72%);
+  box-shadow: 0 0 0 7px var(--bg), 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 34px rgba(201, 169, 74, 0.1);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.5);
+  animation: cov-stamp 0.7s cubic-bezier(0.2, 1.35, 0.4, 1) 1.7s forwards;
+}
+.dvp .seal::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--gold-line);
+  border-radius: 50%;
+  opacity: 0.45;
+}
+.dvp .seal .seal-mark {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 33px;
+  line-height: 1;
+  color: var(--gold-2);
+}
+.dvp .seal .seal-cap {
+  font-size: 7px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* call to action */
+.cover-cta {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 50px;
+  opacity: 0;
+  animation: cov-in 0.85s ease 1.95s forwards;
+}
+.enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--gold-line);
+  background: var(--gold-dim);
+  color: var(--gold-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  padding: 15px 26px;
+  transition: background 0.16s, box-shadow 0.16s;
+}
+.enter:hover {
+  background: rgba(201, 169, 74, 0.2);
+  box-shadow: inset 0 0 0 1px var(--gold-line);
+}
+.enter .arw {
+  transition: transform 0.2s;
+}
+.enter:hover .arw {
+  transform: translateX(5px);
+}
+.entkey {
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.entkey kbd {
+  font-family: var(--font-mono);
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  padding: 1px 6px;
+  color: var(--dim);
+}
+
+/* footer coordinates */
+.cover-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 15px;
+  border-top: 1px solid var(--line);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  opacity: 0;
+  animation: cov-in 0.85s ease 2.08s forwards;
+}
+.cover-foot .seam {
+  font-family: var(--font-serif);
+  font-style: italic;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.cover-foot .seam b {
+  color: var(--gold);
+  font-weight: 400;
+}
+
+@keyframes cov-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cov-rise {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 102% 0);
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 -12% 0);
+    transform: none;
+  }
+}
+@keyframes cov-draw {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes cov-stamp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (max-width: 720px) {
+  .cover {
+    padding: 24px 22px;
+  }
+  .cover-top,
+  .cover-foot {
+    gap: 10px 16px;
+  }
+  .dvp {
+    gap: 52px;
+  }
+  .dvp .seal {
+    width: 108px;
+    height: 108px;
+  }
+}
+
+/* respect reduced-motion: land everything in its final state */
+@media (prefers-reduced-motion: reduce) {
+  .cover [class],
+  .cover .cover-name .l1,
+  .cover .cover-name .l2 {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+  .dvp .seal {
+    transform: translate(-50%, -50%) !important;
+  }
+  .dvp .leg .track .line,
+  .cover-rule {
+    transform: scaleX(1) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SPECIMEN — Certificate of Settlement. A banknote-grade engraved plate:
+   double-ruled frame, corner marks, security microtext, a stamped brass seal.
+   Prints (⌘/Ctrl-P) as warm engraved paper via the @media print block below.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.specimen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  padding: 48px 22px 56px;
+}
+
+.plate {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  padding: 26px 32px 26px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--gold-line);
+  box-shadow: 0 34px 84px -34px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(233, 231, 223, 0.04);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+  animation: sp-print 0.9s cubic-bezier(0.16, 0.75, 0.2, 1) 0.05s forwards;
+}
+.plate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(45deg, rgba(201, 169, 74, 0.03) 0 1px, transparent 1px 7px);
+  opacity: 0.6;
+}
+.plate-edge {
+  position: absolute;
+  inset: 7px;
+  border: 1px solid var(--line-2);
+  pointer-events: none;
+}
+.plate .corner {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--gold-2);
+  transform: rotate(45deg);
+  z-index: 2;
+}
+.plate .corner.tl {
+  top: 11px;
+  left: 11px;
+}
+.plate .corner.tr {
+  top: 11px;
+  right: 11px;
+}
+.plate .corner.bl {
+  bottom: 11px;
+  left: 11px;
+}
+.plate .corner.br {
+  bottom: 11px;
+  right: 11px;
+}
+
+.microtext {
+  position: relative;
+  z-index: 1;
+  height: 8px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 5.5px;
+  letter-spacing: 0.24em;
+  line-height: 8px;
+  color: var(--faint);
+  opacity: 0.7;
+  user-select: none;
+}
+
+.pl-head {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+}
+.pl-mark {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--gold-line);
+  background: var(--gold-dim);
+  color: var(--gold-2);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 22px;
+}
+.pl-issuer {
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.pl-title {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 27px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+.pl-no {
+  text-align: right;
+}
+.pl-no .k {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 4px;
+}
+.pl-no .v {
+  font-size: 12px;
+  color: var(--gold-2);
+}
+
+.pl-hair {
+  height: 1px;
+  margin: 15px 0 14px;
+  background: linear-gradient(90deg, var(--gold-line), var(--line-2) 45%, var(--gold-line));
+  transform: scaleX(0);
+  animation: cov-draw 1s cubic-bezier(0.16, 0.75, 0.2, 1) 0.5s forwards;
+}
+
+.pl-attest {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  max-width: 46ch;
+  margin-bottom: 20px;
+  opacity: 0;
+  animation: cov-in 0.7s ease 0.55s forwards;
+}
+.pl-attest b {
+  color: var(--ink);
+  font-weight: 400;
+  border-bottom: 1px solid var(--gold-line);
+}
+
+.pl-legs {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 30px 1fr;
+  align-items: stretch;
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  opacity: 0;
+  animation: cov-in 0.7s ease 0.66s forwards;
+}
+.pl-leg {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.pl-leg.r {
+  text-align: right;
+  align-items: flex-end;
+}
+.lg-k {
+  font-size: 8.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.lg-v {
+  font-family: var(--font-serif);
+  font-size: 23px;
+  color: var(--gold-2);
+  line-height: 1;
+}
+.lg-sub {
+  font-size: 9.5px;
+  color: var(--dim);
+  line-height: 1.4;
+}
+.lg-flow {
+  font-size: 10px;
+  color: var(--ink-2);
+  margin-top: 2px;
+}
+.lg-flow em {
+  color: var(--gold);
+  font-style: normal;
+  margin: 0 4px;
+}
+.pl-vs {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--gold-2);
+  background: var(--gold-dim);
+}
+
+.pl-compliance {
+  position: relative;
+  z-index: 1;
+  border: 1px solid var(--ok-line);
+  background: var(--ok-dim);
+  padding: 12px 16px;
+  margin-top: 14px;
+  opacity: 0;
+  animation: cov-in 0.7s ease 0.78s forwards;
+}
+.pc-title {
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 9px;
+}
+.pc-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+}
+.pc-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--ok-2);
+  font-variant-numeric: tabular-nums;
+}
+.pc-code i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--ok);
+  box-shadow: 0 0 9px var(--ok-line);
+}
+.pc-note {
+  font-size: 9.5px;
+  line-height: 1.55;
+  color: var(--dim);
+  margin-top: 9px;
+}
+.pc-note .mono {
+  color: var(--ink-2);
+}
+
+.pl-proof {
+  position: relative;
+  z-index: 1;
+  margin-top: 15px;
+  opacity: 0;
+  animation: cov-in 0.7s ease 0.9s forwards;
+}
+.pr-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+.pr-row:first-child {
+  border-top: none;
+}
+.pr-row .k {
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.pr-row .v {
+  font-size: 11px;
+  color: var(--ink-2);
+  text-align: right;
+}
+.pr-row .link {
+  color: var(--gold-2);
+  border-bottom: 1px solid var(--gold-line);
+  transition: background 0.15s;
+}
+.pr-row .link:hover {
+  background: var(--gold-dim);
+}
+
+.pl-foot {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 22px;
+  margin-top: 22px;
+}
+.pl-seal {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  text-align: center;
+  border: 1px solid var(--gold-line);
+  background: radial-gradient(circle at 50% 32%, rgba(201, 169, 74, 0.18), var(--panel) 72%);
+  box-shadow: 0 0 22px rgba(201, 169, 74, 0.12);
+  transform: rotate(-8deg) scale(1.4);
+  opacity: 0;
+  animation: sp-stamp 0.6s cubic-bezier(0.2, 1.35, 0.4, 1) 1.15s forwards;
+}
+.pl-seal::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--gold-line);
+  border-radius: 50%;
+  opacity: 0.4;
+}
+.sl-mark {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 24px;
+  color: var(--gold-2);
+  line-height: 1;
+}
+.sl-cap {
+  font-size: 6.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  line-height: 1.35;
+}
+.sg-line {
+  height: 1px;
+  background: var(--line-3);
+  margin-bottom: 8px;
+}
+.sg-k {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.sg-sub {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--gold-2);
+  margin-top: 4px;
+}
+
+.specimen-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  animation: cov-in 0.8s ease 1.3s forwards;
+}
+.specimen-back {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  transition: color 0.15s;
+}
+.specimen-back:hover {
+  color: var(--ink);
+}
+.specimen-tag {
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+@keyframes sp-print {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sp-stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-8deg) scale(1.4);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+  }
+}
+
+@media (max-width: 560px) {
+  .pl-legs {
+    grid-template-columns: 1fr;
+  }
+  .pl-leg.r {
+    text-align: left;
+    align-items: flex-start;
+  }
+  .pl-vs {
+    border: none;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 4px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specimen [class],
+  .plate {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .plate {
+    transform: none !important;
+  }
+  .plate .pl-hair {
+    transform: scaleX(1) !important;
+  }
+  .plate .pl-seal {
+    transform: rotate(-8deg) !important;
+  }
+}
+
+/* print: re-render the plate as warm engraved paper */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  body::before {
+    display: none !important;
+  }
+  .specimen {
+    min-height: auto !important;
+    padding: 8mm !important;
+    display: block !important;
+  }
+  .specimen-actions {
+    display: none !important;
+  }
+  .plate {
+    --ink: #221b10;
+    --ink-2: #493f2f;
+    --dim: #6a5f49;
+    --faint: #9a8f77;
+    --panel: #f6f0e1;
+    --panel-2: #f6f0e1;
+    --bg-2: #efe7d3;
+    --line: rgba(60, 45, 15, 0.14);
+    --line-2: rgba(60, 45, 15, 0.24);
+    --line-3: rgba(60, 45, 15, 0.34);
+    --gold: #8a6d2c;
+    --gold-2: #75591f;
+    --gold-line: rgba(138, 109, 44, 0.55);
+    --gold-dim: rgba(138, 109, 44, 0.1);
+    --ok: #3f8f63;
+    --ok-2: #2f7a50;
+    --ok-line: rgba(63, 143, 99, 0.5);
+    --ok-dim: rgba(63, 143, 99, 0.09);
+    max-width: 100%;
+    background: #f6f0e1 !important;
+    border-color: #8a6d2c !important;
+    box-shadow: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .plate .pl-attest,
+  .plate .pl-legs,
+  .plate .pl-compliance,
+  .plate .pl-proof {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .plate .pl-hair {
+    animation: none !important;
+    transform: scaleX(1) !important;
+  }
+  .plate .pl-seal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: rotate(-8deg) !important;
+  }
+}
+
+/* wiring: cover → specimen certificate, and settlement-tape rows → their own receipt */
+.cover-specimen {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  border-bottom: 1px solid var(--gold-line);
+  padding-bottom: 1px;
+  transition: color 0.15s;
+}
+.cover-specimen:hover {
+  color: var(--gold-2);
+}
+a.tape-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+a.tape-row:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+a.tape-row:hover .tid {
+  color: var(--gold);
+}
