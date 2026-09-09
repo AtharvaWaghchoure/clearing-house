@@ -22,6 +22,7 @@ contracts/broadcast/**/dry-run/
 app/.next/
 app/out/
 app/node_modules/
+*.tsbuildinfo
 
 # verifier demo outputs (regenerated each run)
 verifier/.local/
