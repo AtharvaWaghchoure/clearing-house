@@ -19,6 +19,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { hederaTestnet } from 'viem/chains';
 import { loadArtifact } from '../abi.js';
 import { codeName, reasonName } from '../codes.js';
+import { hashscan, loadEnv } from './util.js';
 import type { Address, Hex } from '../types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -34,22 +35,6 @@ const QTY = 10n;
 const CASH = 1000n;
 const TRADE_ID = `0x${(0xa75).toString(16).padStart(64, '0')}` as Hex; // 0x…0a75
 
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
-const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
-const txUrl = (h: string) => `https://hashscan.io/testnet/transaction/${h}`;
-const ctUrl = (a: string) => `https://hashscan.io/testnet/contract/${a}`;
-
-function loadEnv() {
-  for (const line of readFileSync(`${ROOT}/.env`, 'utf8').split('\n')) {
-    const t = line.trim();
-    if (!t || t.startsWith('#')) continue;
-    const eq = t.indexOf('=');
-    if (eq > 0 && !(t.slice(0, eq).trim() in process.env)) process.env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim();
-  }
-}
 const readJson = (p: string) => {
   if (!existsSync(p)) throw new Error(`missing ${p}`);
   return JSON.parse(readFileSync(p, 'utf8'));
@@ -69,7 +54,7 @@ const bondAbi = parseAbi([
 ]);
 
 async function main() {
-  loadEnv();
+  loadEnv(ROOT);
   const RPC = process.env.HEDERA_RPC ?? 'https://testnet.hashio.io/api';
   const OP_KEY = process.env.HEDERA_OPERATOR_KEY as Hex;
   const bondJson = readJson(`${LOCAL}/ats-bond.json`);
@@ -99,7 +84,7 @@ async function main() {
     }
     const hash = await w.writeContract({ address, abi: abi as Abi, functionName: fn, args, gas });
     const rc = await pub.waitForTransactionReceipt({ hash, ...wait });
-    if (rc.status !== 'success') throw new Error(`${fn} reverted (${txUrl(hash)})`);
+    if (rc.status !== 'success') throw new Error(`${fn} reverted (${hashscan.tx(hash)})`);
     return hash;
   };
   const read = (fn: string, args: unknown[]) => pub.readContract({ address: bond, abi: bondAbi, functionName: fn, args });
@@ -110,20 +95,20 @@ async function main() {
     return rc.contractAddress as Address;
   };
 
-  console.log(bold('\n▍ Settle the REAL ATS bond through the venue\n'));
-  console.log(`  bond(ATS)  ${bond}   ${dim('(issued via Factory 0.0.9213391)')}`);
+  console.log('\nsettle ATS bond through the venue\n');
+  console.log(`  bond(ATS)  ${bond}   (issued via Factory 0.0.9213391)`);
 
-  console.log(bold('\n▸ deploy venue (leg + engine)'));
+  console.log('\ndeploy venue (leg + engine)');
   const leg = await deploy(HoldLeg, [operator.address]);
   const engine = await deploy(Engine, [operator.address, leg, leg, operator.address]);
   await send(wOp, leg, HoldLeg.abi, 'setEngine', [engine]);
-  console.log(`  leg    ${green(leg)}\n  engine ${green(engine)}`);
+  console.log(`  leg    ${leg}\n  engine ${engine}`);
 
   const now = BigInt(Math.floor(Date.now() / 1000));
   const validTo = now + 10n * 31_536_000n;
 
   // idempotent: ATS reverts on re-grant / re-KYC, so guard each step
-  console.log(bold('\n▸ prepare the ATS bond (roles · KYC · issue)'));
+  console.log('\nprepare the ATS bond (roles · KYC · issue)');
   const ensureRole = async (role: Hex) => {
     if (!(await read('hasRole', [role, operator.address]))) await send(wOp, bond, bondAbi, 'grantRole', [role, operator.address]);
   };
@@ -137,17 +122,17 @@ async function main() {
   await ensureKyc(seller.address, 'vc-ch-seller');
   await ensureKyc(buyer.address, 'vc-ch-buyer');
   await send(wOp, bond, bondAbi, 'issue', [seller.address, QTY, '0x']); // fresh free balance for the hold
-  console.log(dim(`  issuer/kyc/ssi ready · KYC'd seller+buyer · issued ${QTY} to seller`));
+  console.log(`  issuer/kyc/ssi ready · KYC'd seller+buyer · issued ${QTY} to seller`);
 
-  console.log(bold('\n▸ cash leg (deposit token)'));
+  console.log('\ncash leg (deposit token)');
   const cash = await deploy(MockATS, ['USD Deposit Token']);
   await send(wOp, cash, MockATS.abi, 'mint', [P, buyer.address, CASH * 10n]);
   await send(wOp, cash, MockATS.abi, 'setVerified', [seller.address, true]);
   await send(wOp, cash, MockATS.abi, 'setVerified', [buyer.address, true]);
-  console.log(dim(`  cash ${cash}`));
+  console.log(`  cash ${cash}`);
 
   // capture the assigned holdIds via simulate before sending
-  console.log(bold('\n▸ place holds (escrow = venue leg)'));
+  console.log('\nplace holds (escrow = venue leg)');
   const holdExp = now + 31_536_000n;
   const bondHold = { amount: QTY, expirationTimestamp: holdExp, escrow: leg, to: ZERO, data: '0x' as Hex };
   const cashHold = { amount: CASH, expirationTimestamp: holdExp, escrow: leg, to: ZERO, data: '0x' as Hex };
@@ -157,19 +142,19 @@ async function main() {
   const cashSim = await pub.simulateContract({ account: buyer, address: cash, abi: MockATS.abi as Abi, functionName: 'createHoldByPartition', args: [P, cashHold] });
   const cashHoldId = (cashSim.result as readonly [boolean, bigint])[1];
   await send(wBuyer, cash, MockATS.abi, 'createHoldByPartition', [P, cashHold]);
-  console.log(dim(`  seller held the ATS bond (holdId ${bondHoldId}), buyer held the cash (holdId ${cashHoldId})`));
+  console.log(`  seller held the ATS bond (holdId ${bondHoldId}), buyer held the cash (holdId ${cashHoldId})`);
 
-  console.log(bold('\n▸ settle'));
+  console.log('\nsettle');
   const trade = {
     bond: { token: bond, from: seller.address, to: buyer.address, amount: QTY, partition: P, holdId: bondHoldId, tradeId: TRADE_ID, extra: '0x' as Hex },
     cash: { token: cash, from: buyer.address, to: seller.address, amount: CASH, partition: P, holdId: cashHoldId, tradeId: TRADE_ID, extra: '0x' as Hex },
   };
   const pf = (await pub.readContract({ address: engine, abi: Engine.abi as Abi, functionName: 'preflight', args: [trade] })) as [boolean, Hex, Hex, Hex, Hex];
-  console.log(`  pre-flight ok=${pf[0]}  bond ${bold(pf[1])} ${codeName(pf[1])} ${reasonName(pf[2])}  ·  cash ${bold(pf[3])} ${codeName(pf[3])}`);
+  console.log(`  pre-flight ok=${pf[0]}  bond ${pf[1]} ${codeName(pf[1])} ${reasonName(pf[2])}  ·  cash ${pf[3]} ${codeName(pf[3])}`);
   try {
     await pub.simulateContract({ account: operator, address: engine, abi: Engine.abi as Abi, functionName: 'settle', args: [trade], gas: 3_000_000n });
   } catch (e) {
-    console.error(red(`\n✗ settle would revert:\n${e instanceof Error ? e.message : e}`));
+    console.error(`\nsettle would revert:\n${e instanceof Error ? e.message : e}`);
     process.exit(1);
   }
   const hash = await send(wOp, engine, Engine.abi, 'settle', [trade], 3_000_000n);
@@ -177,11 +162,11 @@ async function main() {
   const buyerBond = (await read('balanceOfByPartition', [P, buyer.address])) as bigint;
   writeFileSync(`${LOCAL}/ats-settle.json`, JSON.stringify({ bond, cash, engine, leg, tradeId: TRADE_ID, settleTx: hash, buyerBondBalance: buyerBond.toString() }, null, 2));
 
-  console.log(green(bold('\n▍ Settled a REAL ATS bond through the venue ✓')));
-  console.log(`  delivery was a real ATS hold — buyer now holds ${cyan(buyerBond.toString())} of ${bond}`);
-  console.log(`  engine ${ctUrl(engine)}`);
-  console.log(`  settle ${txUrl(hash)}`);
-  console.log(`  saved → verifier/.local/ats-settle.json\n`);
+  console.log('\nsettled ATS bond through the venue');
+  console.log(`  delivery was a real ATS hold — buyer now holds ${buyerBond.toString()} of ${bond}`);
+  console.log(`  engine ${hashscan.contract(engine)}`);
+  console.log(`  settle ${hashscan.tx(hash)}`);
+  console.log(`  saved verifier/.local/ats-settle.json\n`);
 }
 
 main().catch((e) => {

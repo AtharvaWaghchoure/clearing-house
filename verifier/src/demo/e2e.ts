@@ -38,10 +38,6 @@ const QTY = 10n;
 const CASH = 1000n;
 const tid = (n: number): Hex => `0x${n.toString(16).padStart(64, '0')}` as Hex;
 
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
-const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
-
 async function main() {
   const pub = createPublicClient({ chain: foundry, transport: http(RPC) });
   await pub.getBlockNumber().catch(() => {
@@ -72,14 +68,14 @@ async function main() {
   };
 
   const startBlock = await pub.getBlockNumber();
-  console.log(bold('\n▍ CLEARING HOUSE — local end-to-end demo\n'));
+  console.log('\nCLEARING HOUSE — local end-to-end demo\n');
 
   const bond = await deploy(wOp, MockATS, ['ACME 5.5% 2030 Bond']);
   const cash = await deploy(wOp, MockATS, ['USD Deposit Token']);
   const holdLeg = await deploy(wOp, HoldLeg, [operator.address]);
   const engine = await deploy(wOp, Engine, [operator.address, holdLeg, holdLeg, operator.address]);
   await send(wOp, holdLeg, HoldLeg.abi, 'setEngine', [engine]);
-  console.log(dim(`  bond   ${bond}\n  cash   ${cash}\n  leg    ${holdLeg}\n  engine ${engine}`));
+  console.log(`  bond   ${bond}\n  cash   ${cash}\n  leg    ${holdLeg}\n  engine ${engine}`);
 
   await send(wOp, bond, MockATS.abi, 'mint', [P, seller.address, 1000n]);
   await send(wOp, cash, MockATS.abi, 'mint', [P, buyer.address, 100000n]);
@@ -88,7 +84,7 @@ async function main() {
       await send(wOp, token, MockATS.abi, 'setVerified', [who, true]);
     }
   }
-  console.log(dim('  issued bond to seller, cash to buyer; KYC granted to both on both tokens'));
+  console.log('  issued bond to seller, cash to buyer; KYC granted to both on both tokens');
 
   const leg = (token: Address, from: Address, to: Address, amount: bigint, holdId: bigint, tradeId: Hex) => ({
     token,
@@ -111,7 +107,7 @@ async function main() {
       { amount: CASH, expirationTimestamp: 0n, escrow: holdLeg, to: ZERO, data: '0x' },
     ]);
 
-  console.log(bold('\n① one tx · delivery ∧ payment'));
+  console.log('\none tx · delivery ∧ payment');
   for (let i = 1; i <= 3; i++) {
     await placeBondHold();
     await placeCashHold();
@@ -120,10 +116,10 @@ async function main() {
       cash: leg(cash, buyer.address, seller.address, CASH, BigInt(i), tid(i)),
     };
     await send(wOp, engine, Engine.abi, 'settle', [trade]);
-    console.log(`   settled ${cyan(tid(i).slice(0, 10) + '…')}  ${dim('bond→buyer ∧ cash→seller, atomic')}`);
+    console.log(`   settled ${tid(i).slice(0, 10) + '…'}  bond→buyer ∧ cash→seller, atomic`);
   }
 
-  console.log(bold('\n② revoke KYC → the identical order rejects (named reason, pre-signature)'));
+  console.log('\nrevoke KYC → the identical order rejects (named reason, pre-signature)');
   await placeBondHold(); // holdId 4
   await placeCashHold(); // holdId 4
   const trade4 = {
@@ -137,25 +133,23 @@ async function main() {
     functionName: 'preflight',
     args: [trade4],
   })) as [boolean, Hex, Hex, Hex, Hex];
-  console.log(
-    `   pre-flight: ok=${pf[0]}  bond → ${bold(pf[1])} · ${bold(codeName(pf[1]))} · ${bold(reasonName(pf[2]))}`,
-  );
+  console.log(`   pre-flight: ok=${pf[0]}  bond → ${pf[1]} · ${codeName(pf[1])} · ${reasonName(pf[2])}`);
   try {
     await send(wOp, engine, Engine.abi, 'settle', [trade4]);
-    console.log('   ⚠ settle unexpectedly succeeded');
+    console.log('   settle unexpectedly succeeded');
   } catch {
-    console.log(`   settle() reverted ${dim('— the venue cannot fill a non-compliant trade')}`);
+    console.log(`   settle() reverted — the venue cannot fill a non-compliant trade`);
   }
 
-  console.log(bold('\n③ independent verifier (reads the chain, shares no venue code)'));
+  console.log('\nindependent verifier (reads the chain, shares no venue code)');
   const ds = new ChainDataSource({ rpcUrl: RPC, engine, tokens: [bond, cash], fromBlock: startBlock, label: 'anvil' });
   const onchain = await ds.getSettlements();
   const honest = honestClaims(onchain);
   const lying = withLie(honest, { kind: 'fabricate', tradeId: tid(413) });
 
-  console.log(dim(`\n   venue's HONEST report (${honest.length} trades):`));
+  console.log(`\n   venue's honest report (${honest.length} trades):`);
   console.log(formatReport(await audit(ds, honest)));
-  console.log(dim(`\n   venue's report with ONE fabricated trade (${tid(413).slice(0, 10)}…):`));
+  console.log(`\n   venue's report with one fabricated trade (${tid(413).slice(0, 10)}…):`);
   console.log(formatReport(await audit(ds, lying)));
 
   // persist for the CLI / MCP / frontend
@@ -173,8 +167,8 @@ async function main() {
   writeFileSync(`${outDir}/local.json`, JSON.stringify(deployment, null, 2));
   writeFileSync(`${outDir}/venue-ledger.json`, JSON.stringify(lying, null, 2));
   writeFileSync(`${outDir}/venue-ledger.honest.json`, JSON.stringify(honest, null, 2));
-  console.log(dim(`\n   wrote ${outDir}/{local.json, venue-ledger.json}`));
-  console.log(bold('\n▍ done.\n'));
+  console.log(`\n   wrote ${outDir}/{local.json, venue-ledger.json}`);
+  console.log('\ndone.\n');
 }
 
 main().catch((e) => {

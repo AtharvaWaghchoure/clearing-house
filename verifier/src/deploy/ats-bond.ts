@@ -7,13 +7,14 @@
 //
 // Run:  pnpm --filter @clearing-house/verifier exec tsx src/deploy/ats-bond.ts
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type Abi, type Log, createPublicClient, createWalletClient, decodeEventLog, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { hederaTestnet } from 'viem/chains';
 import { loadArtifact } from '../abi.js';
+import { hashscan, loadEnv } from './util.js';
 import type { Address, Hex } from '../types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -24,21 +25,6 @@ const ZERO = '0x0000000000000000000000000000000000000000' as Address;
 const DEFAULT_ADMIN_ROLE = `0x${'0'.repeat(64)}` as Hex;
 const BOND_CONFIG_ID = `0x${'0'.repeat(63)}2` as Hex; // 0x…0002
 const MAX_UINT256 = 2n ** 256n - 1n;
-
-const ctUrl = (a: string) => `https://hashscan.io/testnet/contract/${a}`;
-const txUrl = (h: string) => `https://hashscan.io/testnet/transaction/${h}`;
-
-function loadEnv() {
-  const path = `${ROOT}/.env`;
-  if (!existsSync(path)) throw new Error(`no .env at ${path}`);
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const t = line.trim();
-    if (!t || t.startsWith('#')) continue;
-    const eq = t.indexOf('=');
-    if (eq === -1) continue;
-    if (!(t.slice(0, eq).trim() in process.env)) process.env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim();
-  }
-}
 
 // Read + validate the deploy env before we build any client or spend gas.
 function requireEnv() {
@@ -114,7 +100,7 @@ function bondAddressFromLogs(logs: Log[], abi: Abi, fallback: Address): Address 
 }
 
 async function main() {
-  loadEnv();
+  loadEnv(ROOT);
   const { RPC, OP_KEY, FACTORY, BLR } = requireEnv();
 
   const pub = createPublicClient({ chain: hederaTestnet, transport: http(RPC) });
@@ -125,7 +111,7 @@ async function main() {
   const now = BigInt(Math.floor(Date.now() / 1000));
   const { bondData, regulation } = buildBond(operator.address, BLR, now);
 
-  console.log(`\n▍ Issuing a bond via the real ATS Factory ${FACTORY}\n`);
+  console.log(`\nissuing bond via ATS Factory ${FACTORY}\n`);
   console.log(`  operator ${operator.address}`);
   console.log(`  resolver(BLR) ${BLR}  ·  config ${BOND_CONFIG_ID.slice(0, 6)}…02 v1  ·  REG_S`);
 
@@ -141,9 +127,9 @@ async function main() {
       gas: 10_000_000n,
     });
     predicted = sim.result as Address;
-    console.log(`  ✓ simulate ok — predicted bond diamond ${predicted}`);
+    console.log(`  simulate ok — predicted bond diamond ${predicted}`);
   } catch (e) {
-    console.error(`\n✗ simulate reverted — not sending. Reason:\n${e instanceof Error ? e.message : e}`);
+    console.error(`\nsimulate reverted — not sending:\n${e instanceof Error ? e.message : e}`);
     process.exit(1);
   }
 
@@ -156,7 +142,7 @@ async function main() {
     gas: 10_000_000n,
   });
   const rc = await pub.waitForTransactionReceipt({ hash, timeout: 180_000, pollingInterval: 2_000 });
-  if (rc.status !== 'success') throw new Error(`deployBond reverted on-chain (${txUrl(hash)})`);
+  if (rc.status !== 'success') throw new Error(`deployBond reverted on-chain (${hashscan.tx(hash)})`);
 
   const bond = bondAddressFromLogs(rc.logs, Factory.abi as Abi, predicted);
 
@@ -168,15 +154,15 @@ async function main() {
     bond,
     isin: 'US0378331005',
     tx: hash,
-    hashscan: { bond: ctUrl(bond), tx: txUrl(hash) },
+    hashscan: { bond: hashscan.contract(bond), tx: hashscan.tx(hash) },
   };
   writeFileSync(`${LOCAL}/ats-bond.json`, JSON.stringify(out, null, 2));
 
-  console.log(`\n▍ Bond issued via ATS Factory ✓`);
+  console.log(`\nbond issued via ATS Factory`);
   console.log(`  bond diamond ${bond}`);
-  console.log(`  ${ctUrl(bond)}`);
-  console.log(`  tx ${txUrl(hash)}`);
-  console.log(`  saved → verifier/.local/ats-bond.json\n`);
+  console.log(`  ${hashscan.contract(bond)}`);
+  console.log(`  tx ${hashscan.tx(hash)}`);
+  console.log(`  saved verifier/.local/ats-bond.json\n`);
 }
 
 main().catch((e) => {

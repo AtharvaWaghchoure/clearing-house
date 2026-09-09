@@ -31,6 +31,7 @@ import { hederaTestnet } from 'viem/chains';
 import { AccountCreateTransaction, AccountId, Client, Hbar, PrivateKey } from '@hashgraph/sdk';
 import { loadArtifact } from '../abi.js';
 import { codeName, reasonName } from '../codes.js';
+import { hashscan, loadEnv } from './util.js';
 import type { Address, Hex } from '../types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -42,15 +43,6 @@ const ZERO = '0x0000000000000000000000000000000000000000' as Address;
 const QTY = 10n;
 const CASH = 1000n;
 const tid = (n: number): Hex => `0x${n.toString(16).padStart(64, '0')}` as Hex;
-
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
-
-const txUrl = (h: string) => `https://hashscan.io/testnet/transaction/${h}`;
-const ctUrl = (a: string) => `https://hashscan.io/testnet/contract/${a}`;
 
 const MIRROR = 'https://testnet.mirrornode.hedera.com';
 /** Is this EVM address indexed as an account on the mirror node the relay reads from? */
@@ -73,23 +65,8 @@ async function waitIndexed(addr: string, tries = 25): Promise<void> {
   throw new Error(`account ${addr} never indexed on the mirror node`);
 }
 
-/** Minimal .env loader (no dep) — .env is normalised to KEY=value, one per line, no inline comments. */
-function loadEnv() {
-  const path = `${ROOT}/.env`;
-  if (!existsSync(path)) throw new Error(`no .env at ${path} — see docs/hedera-setup.md`);
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const t = line.trim();
-    if (!t || t.startsWith('#')) continue;
-    const eq = t.indexOf('=');
-    if (eq === -1) continue;
-    const k = t.slice(0, eq).trim();
-    const v = t.slice(eq + 1).trim();
-    if (!(k in process.env)) process.env[k] = v;
-  }
-}
-
 async function main() {
-  loadEnv();
+  loadEnv(ROOT);
   const RPC = process.env.HEDERA_RPC ?? 'https://testnet.hashio.io/api';
   const OP_KEY = process.env.HEDERA_OPERATOR_KEY as Hex | undefined;
   if (!OP_KEY || !/^0x[0-9a-fA-F]{64}$/.test(OP_KEY)) {
@@ -125,12 +102,12 @@ async function main() {
   const wSeller = wallet(seller);
   const wBuyer = wallet(buyer);
 
-  console.log(bold('\n▍ CLEARING HOUSE — Hedera testnet deployment\n'));
+  console.log('\nCLEARING HOUSE — Hedera testnet deployment\n');
   const opBal = await pub.getBalance({ address: operator.address });
-  console.log(`  operator ${operator.address}  ${dim(`${formatEther(opBal)} HBAR`)}`);
+  console.log(`  operator ${operator.address}  ${formatEther(opBal)} HBAR`);
   console.log(`  seller   ${seller.address}`);
   console.log(`  buyer    ${buyer.address}`);
-  if (opBal < parseEther('60')) console.log(red(`  ⚠ operator balance is low; deployment needs ~50-60 HBAR`));
+  if (opBal < parseEther('60')) console.log(`  operator balance is low; deployment needs ~50-60 HBAR`);
 
   const waitOpts = { timeout: 90_000, pollingInterval: 2_000 } as const;
   const pad = (g: bigint) => (g * 125n) / 100n;
@@ -147,8 +124,8 @@ async function main() {
     const gas = await gasOr(() => pub.estimateGas({ account: operator.address, data }), fb);
     const hash = await wOp.deployContract({ abi: art.abi as Abi, bytecode: art.bytecode, args, gas });
     const rc = await pub.waitForTransactionReceipt({ hash, ...waitOpts });
-    if (rc.status !== 'success' || !rc.contractAddress) throw new Error(`${label} deploy failed (${txUrl(hash)})`);
-    console.log(`  ${label.padEnd(7)} ${green(rc.contractAddress)}  ${dim(ctUrl(rc.contractAddress))}`);
+    if (rc.status !== 'success' || !rc.contractAddress) throw new Error(`${label} deploy failed (${hashscan.tx(hash)})`);
+    console.log(`  ${label.padEnd(7)} ${rc.contractAddress}  ${hashscan.contract(rc.contractAddress)}`);
     return rc.contractAddress as Address;
   };
 
@@ -172,21 +149,21 @@ async function main() {
   // An EVM value-transfer to a fresh address does NOT create an account on Hedera; the native
   // AccountCreate (with the ECDSA key's EVM alias) does, yielding an account the relay can transact
   // from once the mirror node indexes it.
-  console.log(bold('\n▸ provision counterparties'));
+  console.log('\nprovision counterparties');
   const hedera = Client.forTestnet().setOperator(
     AccountId.fromString(OP_ID),
     PrivateKey.fromStringECDSA(OP_KEY.slice(2)),
   );
   const ensure = async (name: string, hex: Hex, addr: Address) => {
     if (await mirrorFound(addr)) {
-      console.log(dim(`  ${name.padEnd(6)} already provisioned  ${addr}`));
+      console.log(`  ${name.padEnd(6)} already provisioned  ${addr}`);
       return;
     }
     const key = PrivateKey.fromStringECDSA(hex.slice(2));
     const resp = await new AccountCreateTransaction().setECDSAKeyWithAlias(key).setInitialBalance(new Hbar(25)).execute(hedera);
     const rec = await resp.getReceipt(hedera);
     await waitIndexed(addr);
-    console.log(`  ${name.padEnd(6)} ${green(rec.accountId?.toString() ?? '?')}  ${dim(addr)}`);
+    console.log(`  ${name.padEnd(6)} ${rec.accountId?.toString() ?? '?'}  ${addr}`);
   };
   try {
     await ensure('seller', acc.seller, seller.address);
@@ -199,14 +176,14 @@ async function main() {
   const HoldLeg = loadArtifact('HederaHoldLeg');
   const Engine = loadArtifact('MatchingEngine');
 
-  console.log(bold('\n▸ deploy'));
+  console.log('\ndeploy');
   const bond = await deploy('bond', MockATS, ['HELVETIA 4.25% 15FEB2031'], 3_500_000n);
   const cash = await deploy('cash', MockATS, ['USD Deposit Token'], 3_500_000n);
   const holdLeg = await deploy('leg', HoldLeg, [operator.address], 1_500_000n);
   const engine = await deploy('engine', Engine, [operator.address, holdLeg, holdLeg, operator.address], 2_500_000n);
   await send(wOp, holdLeg, HoldLeg.abi, 'setEngine', [engine]);
 
-  console.log(bold('\n▸ issue + KYC'));
+  console.log('\nissue + KYC');
   await send(wOp, bond, MockATS.abi, 'mint', [P, seller.address, 1000n]);
   await send(wOp, cash, MockATS.abi, 'mint', [P, buyer.address, 100000n]);
   for (const token of [bond, cash]) {
@@ -214,7 +191,7 @@ async function main() {
       await send(wOp, token, MockATS.abi, 'setVerified', [who, true]);
     }
   }
-  console.log(dim('  bond → seller, cash → buyer; both KYC-verified on both tokens'));
+  console.log('  bond → seller, cash → buyer; both KYC-verified on both tokens');
 
   const leg = (token: Address, from: Address, to: Address, amount: bigint, holdId: bigint, tradeId: Hex) => ({
     token,
@@ -237,7 +214,7 @@ async function main() {
       { amount: CASH, expirationTimestamp: 0n, escrow: holdLeg, to: ZERO, data: '0x' },
     ]);
 
-  console.log(bold('\n① one tx · delivery ∧ payment  (live on Hedera)'));
+  console.log('\none tx · delivery ∧ payment  (live on Hedera)');
   const settlements: { tradeId: Hex; tx: Hex }[] = [];
   for (let i = 1; i <= 2; i++) {
     await placeBondHold();
@@ -247,12 +224,12 @@ async function main() {
       cash: leg(cash, buyer.address, seller.address, CASH, BigInt(i), tid(i)),
     };
     const r = await send(wOp, engine, Engine.abi, 'settle', [trade], 1_500_000n);
-    if (r.status !== 'success') throw new Error(`settle ${i} reverted (${txUrl(r.hash)})`);
+    if (r.status !== 'success') throw new Error(`settle ${i} reverted (${hashscan.tx(r.hash)})`);
     settlements.push({ tradeId: tid(i), tx: r.hash });
-    console.log(`  settled ${cyan(tid(i).slice(0, 10) + '…')}  ${dim('bond→buyer ∧ cash→seller, atomic')}  ${dim(txUrl(r.hash))}`);
+    console.log(`  settled ${tid(i).slice(0, 10) + '…'}  bond→buyer ∧ cash→seller, atomic  ${hashscan.tx(r.hash)}`);
   }
 
-  console.log(bold('\n② revoke KYC → identical order rejects (named reason, pre-signature)'));
+  console.log('\nrevoke KYC → identical order rejects (named reason, pre-signature)');
   await placeBondHold(); // holdId 3
   await placeCashHold(); // holdId 3
   const trade3 = {
@@ -266,9 +243,7 @@ async function main() {
     functionName: 'preflight',
     args: [trade3],
   })) as [boolean, Hex, Hex, Hex, Hex];
-  console.log(
-    `  pre-flight ok=${pf[0]}  bond → ${bold(pf[1])} · ${bold(codeName(pf[1]))} · ${bold(reasonName(pf[2]))}`,
-  );
+  console.log(`  pre-flight ok=${pf[0]}  bond → ${pf[1]} · ${codeName(pf[1])} · ${reasonName(pf[2])}`);
   let rejected = false;
   try {
     const r = await send(wOp, engine, Engine.abi, 'settle', [trade3], 1_500_000n);
@@ -276,7 +251,7 @@ async function main() {
   } catch {
     rejected = true;
   }
-  console.log(rejected ? green('  settle() refused — the venue cannot fill a non-compliant trade') : red('  ⚠ settle unexpectedly succeeded'));
+  console.log(rejected ? '  settle() refused — the venue cannot fill a non-compliant trade' : '  settle unexpectedly succeeded');
   await send(wOp, bond, MockATS.abi, 'setVerified', [buyer.address, true]); // restore for reuse
 
   const out = {
@@ -292,20 +267,20 @@ async function main() {
     cashToken: cash,
     settlements,
     hashscan: {
-      engine: ctUrl(engine),
-      bondToken: ctUrl(bond),
-      cashToken: ctUrl(cash),
+      engine: hashscan.contract(engine),
+      bondToken: hashscan.contract(bond),
+      cashToken: hashscan.contract(cash),
     },
   };
   writeFileSync(`${LOCAL}/hedera.json`, JSON.stringify(out, null, 2));
 
-  console.log(bold('\n▍ done — venue live on Hedera testnet'));
-  console.log(`  engine   ${ctUrl(engine)}`);
-  console.log(`  bond     ${ctUrl(bond)}`);
-  console.log(`  settlements: ${settlements.length}   saved → verifier/.local/hedera.json\n`);
+  console.log('\ndone — venue live on Hedera testnet');
+  console.log(`  engine   ${hashscan.contract(engine)}`);
+  console.log(`  bond     ${hashscan.contract(bond)}`);
+  console.log(`  settlements: ${settlements.length}   saved verifier/.local/hedera.json\n`);
 }
 
 main().catch((e) => {
-  console.error(red(`\n✗ ${e instanceof Error ? e.message : String(e)}`));
+  console.error(`\n${e instanceof Error ? e.message : String(e)}`);
   process.exit(1);
 });

@@ -43,11 +43,11 @@ async function main() {
   const body = await res.json();
 
   if (!res.ok) {
-    console.error(`  ✗ ${res.status}:`, body);
+    console.error(`  ${res.status}:`, body);
     process.exit(1);
   }
 
-  console.log(`\n  ✓ NAV purchased (HTTP ${res.status}):`);
+  console.log(`\n  NAV purchased (HTTP ${res.status}):`);
   console.log(JSON.stringify(body, null, 2));
 
   const settleHeader = res.headers.get('X-PAYMENT-RESPONSE');

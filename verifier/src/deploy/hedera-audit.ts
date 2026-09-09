@@ -44,7 +44,7 @@ async function main() {
   const d = JSON.parse(readFileSync(path, 'utf8')) as HederaDeploy;
 
   const fromBlock = await firstLogBlock(d.engine);
-  console.log(`\n▍ Independent verifier — reading Hedera testnet from block ${fromBlock}\n`);
+  console.log(`\nindependent verifier — reading Hedera testnet from block ${fromBlock}\n`);
 
   const ds = new ChainDataSource({
     rpcUrl: d.rpcUrl,
@@ -61,9 +61,9 @@ async function main() {
   const honest = honestClaims(settlements);
   const lying = withLie(honest, { kind: 'fabricate', tradeId: tid(413) });
 
-  console.log(`\n  venue's HONEST report (${honest.length} trades):`);
+  console.log(`\n  venue's honest report (${honest.length} trades):`);
   console.log(formatReport(await audit(ds, honest)));
-  console.log(`\n  venue's report with ONE fabricated trade (${tid(413).slice(0, 10)}…):`);
+  console.log(`\n  venue's report with one fabricated trade (${tid(413).slice(0, 10)}…):`);
   console.log(formatReport(await audit(ds, lying)));
 
   // verifier-ready artifacts for the CLI / MCP

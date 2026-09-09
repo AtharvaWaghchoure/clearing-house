@@ -9,7 +9,7 @@
 //
 // Run:  pnpm --filter @clearing-house/verifier exec tsx src/deploy/arc.ts
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -25,6 +25,7 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { loadArtifact } from '../abi.js';
+import { arcscan, loadEnv } from './util.js';
 import type { Address, Hex } from '../types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -52,23 +53,8 @@ const usdcAbi = parseAbi([
 const memoAbi = parseAbi(['function memo(address target, bytes data, bytes32 memoId, bytes memoData)']);
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
-function loadEnv() {
-  for (const line of readFileSync(`${ROOT}/.env`, 'utf8').split('\n')) {
-    const t = line.trim();
-    if (!t || t.startsWith('#')) continue;
-    const eq = t.indexOf('=');
-    if (eq > 0 && !(t.slice(0, eq).trim() in process.env)) process.env[t.slice(0, eq).trim()] = t.slice(eq + 1).trim();
-  }
-}
-
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
-const tx = (h: string) => `https://testnet.arcscan.app/tx/${h}`;
-const addr = (a: string) => `https://testnet.arcscan.app/address/${a}`;
-
 async function main() {
-  loadEnv();
+  loadEnv(ROOT);
   const RPC = process.env.ARC_TESTNET_RPC || 'https://rpc.testnet.arc.network';
   const OP_KEY = process.env.HEDERA_OPERATOR_KEY as Hex; // same ECDSA key; a plain EVM account on Arc
   const USDC = (process.env.ARC_USDC ?? '0x3600000000000000000000000000000000000000') as Address;
@@ -79,7 +65,7 @@ async function main() {
   const operator = privateKeyToAccount(OP_KEY);
   const wallet = createWalletClient({ account: operator, chain: arcTestnet, transport: http(RPC) });
 
-  console.log(bold('\n▍ CLEARING HOUSE — Arc testnet (USDC settlement via Memo)\n'));
+  console.log('\nCLEARING HOUSE — Arc testnet (USDC settlement via Memo)\n');
   console.log(`  operator/payer ${operator.address}`);
   const bal = (await pub.readContract({ address: USDC, abi: usdcAbi, functionName: 'balanceOf', args: [operator.address] })) as bigint;
   console.log(`  USDC balance   ${formatUnits(bal, 6)} USDC`);
@@ -92,21 +78,21 @@ async function main() {
   const send = async (address: Address, abi: readonly unknown[], fn: string, args: unknown[]) => {
     const hash = await wallet.writeContract({ address, abi: abi as Abi, functionName: fn, args });
     const rc = await pub.waitForTransactionReceipt({ hash, ...wait });
-    if (rc.status !== 'success') throw new Error(`${fn} reverted (${tx(hash)})`);
+    if (rc.status !== 'success') throw new Error(`${fn} reverted (${arcscan.tx(hash)})`);
     return { hash, rc };
   };
 
-  console.log(bold('\n▸ deploy ArcMemoLeg'));
+  console.log('\ndeploy ArcMemoLeg');
   const deployHash = await wallet.deployContract({ abi: ArcLeg.abi as Abi, bytecode: ArcLeg.bytecode, args: [operator.address, MEMO, USDC] });
   const dep = await pub.waitForTransactionReceipt({ hash: deployHash, ...wait });
   const leg = dep.contractAddress as Address;
-  console.log(`  leg ${green(leg)}  ${dim(addr(leg))}  ${dim('(venue reference integration)')}`);
+  console.log(`  leg ${leg}  ${arcscan.address(leg)}  (venue reference integration)`);
 
   // Arc's Memo routes through the CallFrom precompile, which only lets an EOA spoof ITSELF
   // (the effective sender must == tx.origin) — a contract cannot wrap it. So on Arc the PAYER settles
   // by calling Memo directly. We self-approve so the exact `transferFrom(payer, seller, amount)` the
   // ArcMemoLeg encodes runs with the payer as spender, keeping `Transfer.from == payer`.
-  console.log(bold('\n▸ settle · payer → Memo(USDC.transferFrom, tradeId)'));
+  console.log('\nsettle · payer → Memo(USDC.transferFrom, tradeId)');
   await send(USDC, usdcAbi, 'approve', [operator.address, AMOUNT]); // self-approve for the wrapped transferFrom
   const meta = toHex('CLEARING HOUSE · HELV31 · cash leg');
   const transferData = encodeFunctionData({ abi: usdcAbi, functionName: 'transferFrom', args: [operator.address, RECIPIENT, AMOUNT] });
@@ -126,15 +112,15 @@ async function main() {
   }
 
   const ok = transferFrom?.toLowerCase() === operator.address.toLowerCase() && memoId?.toLowerCase() === TRADE_ID.toLowerCase();
-  console.log(`  settle tx ${green(hash)}`);
-  console.log(`  Transfer.from = ${transferFrom} ${transferFrom?.toLowerCase() === operator.address.toLowerCase() ? green('(= payer EOA ✓)') : ''}`);
-  console.log(`  Memo.memoId   = ${memoId} ${memoId?.toLowerCase() === TRADE_ID.toLowerCase() ? green('(= tradeId ✓)') : ''}`);
+  console.log(`  settle tx ${hash}`);
+  console.log(`  Transfer.from = ${transferFrom} ${transferFrom?.toLowerCase() === operator.address.toLowerCase() ? '(= payer EOA)' : ''}`);
+  console.log(`  Memo.memoId   = ${memoId} ${memoId?.toLowerCase() === TRADE_ID.toLowerCase() ? '(= tradeId)' : ''}`);
 
   mkdirSync(LOCAL, { recursive: true });
   writeFileSync(`${LOCAL}/arc.json`, JSON.stringify({ network: 'arc-testnet', chainId: 5042002, leg, usdc: USDC, memo: MEMO, payer: operator.address, recipient: RECIPIENT, tradeId: TRADE_ID, settleTx: hash }, null, 2));
 
-  console.log(ok ? green(bold('\n▍ USDC settled on Arc with provable reconciliation ✓')) : '\n▍ settled (verify logs)');
-  console.log(`  ${tx(hash)}\n`);
+  console.log(ok ? '\nUSDC settled on Arc with provable reconciliation' : '\nsettled (verify logs)');
+  console.log(`  ${arcscan.tx(hash)}\n`);
 }
 
 main().catch((e) => {
