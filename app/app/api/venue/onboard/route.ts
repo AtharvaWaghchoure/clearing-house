@@ -20,6 +20,12 @@ const FAUCET_CASH = 100_000n;
 const HBAR_DRIP = '5';
 const HBAR_FLOOR = parseEther('1');
 
+// Per-address cooldown (globalThis so it's shared across route bundles): onboarding costs operator
+// gas, so we don't let one address trigger it repeatedly.
+const g = globalThis as unknown as { __onboardSeen?: Map<string, number> };
+const recentOnboards = (g.__onboardSeen ??= new Map<string, number>());
+const ONBOARD_COOLDOWN_MS = 30_000;
+
 export async function POST(req: Request) {
   let body: { address?: string };
   try {
@@ -31,6 +37,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'a valid EVM address is required' }, { status: 400 });
   }
   const who = body.address as Address;
+
+  const now = Date.now();
+  const last = recentOnboards.get(who.toLowerCase());
+  if (last && now - last < ONBOARD_COOLDOWN_MS) {
+    return NextResponse.json({ error: 'onboarding cooldown — wait a moment and retry' }, { status: 429 });
+  }
+  recentOnboards.set(who.toLowerCase(), now);
 
   try {
     // Gas first (lazy-creates the account) if the wallet is low; then verify + fund. Sequential to

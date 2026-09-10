@@ -23,6 +23,11 @@ import { useWallet } from '@/lib/wallet';
 
 type Msg = { kind: 'ok' | 'err'; text: string; link?: string };
 
+/** Nudge sibling components (the connect bar's position readout) to re-read the chain after an action. */
+function signalRefresh() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('venue:refresh'));
+}
+
 export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
   const w = useWallet();
   const [orders, setOrders] = useState<BookOrder[]>([]);
@@ -71,6 +76,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
     try {
       await onboard(w.address);
       setVerified(true);
+      signalRefresh();
       setMsg({ kind: 'ok', text: 'Onboarded — you are verified and funded with test bond + cash.' });
     } catch (e) {
       setMsg({ kind: 'err', text: (e as Error).message });
@@ -104,6 +110,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
       }
       setMsg({ kind: 'ok', text: 'Order is resting — your hold is live on-chain.' });
       refresh();
+      signalRefresh();
     } catch (e) {
       setMsg({ kind: 'err', text: (e as Error).message });
     } finally {
@@ -122,6 +129,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
       setSelAsk(undefined);
       refresh();
       onSettled?.();
+      signalRefresh();
     } catch (e) {
       setMsg({ kind: 'err', text: (e as Error).message });
     } finally {
@@ -142,6 +150,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
       if (selAsk === o.id) setSelAsk(undefined);
       setMsg({ kind: 'ok', text: 'Order cancelled — hold released, funds back in your balance.' });
       refresh();
+      signalRefresh();
     } catch (e) {
       setMsg({ kind: 'err', text: (e as Error).message });
     } finally {

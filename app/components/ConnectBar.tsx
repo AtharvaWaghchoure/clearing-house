@@ -44,6 +44,15 @@ export default function ConnectBar() {
     void load(w.address);
   }, [w.address, w.onRightChain, load]);
 
+  // re-read the position after a trade / cancel / onboard elsewhere in the venue
+  useEffect(() => {
+    const onRefresh = () => {
+      if (w.address && w.onRightChain) void load(w.address);
+    };
+    window.addEventListener('venue:refresh', onRefresh);
+    return () => window.removeEventListener('venue:refresh', onRefresh);
+  }, [w.address, w.onRightChain, load]);
+
   // --- not connected ---
   if (!w.address) {
     return (
