@@ -7,8 +7,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { INSTRUMENT, deskName } from '@/lib/accounts';
 import { VENUE } from '@/lib/chain';
+import { friendlyError } from '@/lib/errors';
 import { cashStr } from '@/lib/format';
-import { bondEligibility } from '@/lib/onchain';
+import { balanceOf, bondEligibility } from '@/lib/onchain';
 import {
   type BookOrder,
   cancelOrder,
@@ -84,7 +85,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
           : 'Onboarded — verified and funded with test bond + cash.',
       });
     } catch (e) {
-      setMsg({ kind: 'err', text: (e as Error).message });
+      setMsg({ kind: 'err', text: friendlyError(e) });
     } finally {
       setBusy(undefined);
     }
@@ -100,6 +101,20 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
       return;
     }
     setMsg(undefined);
+
+    // pre-flight: don't ask the user to sign a hold they can't cover
+    const token = mode === 'sell' ? VENUE.bondToken : VENUE.cashToken;
+    const need = mode === 'sell' ? BigInt(q) : BigInt(q) * BigInt(p);
+    const sym = mode === 'sell' ? INSTRUMENT.bondSymbol : INSTRUMENT.cashSymbol;
+    const have = await balanceOf(token, w.address);
+    if (have < need) {
+      setMsg({
+        kind: 'err',
+        text: `Not enough free ${sym} — need ${need}, you have ${have}. Cancel a resting order, or onboard for more.`,
+      });
+      return;
+    }
+
     try {
       if (mode === 'sell') {
         setBusy(`Placing a bond hold for ${q} ${INSTRUMENT.bondSymbol} — confirm in your wallet…`);
@@ -117,7 +132,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
       refresh();
       signalRefresh();
     } catch (e) {
-      setMsg({ kind: 'err', text: (e as Error).message });
+      setMsg({ kind: 'err', text: friendlyError(e) });
     } finally {
       setBusy(undefined);
     }
@@ -136,7 +151,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
       onSettled?.();
       signalRefresh();
     } catch (e) {
-      setMsg({ kind: 'err', text: (e as Error).message });
+      setMsg({ kind: 'err', text: friendlyError(e) });
     } finally {
       setBusy(undefined);
     }
@@ -157,7 +172,7 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
       refresh();
       signalRefresh();
     } catch (e) {
-      setMsg({ kind: 'err', text: (e as Error).message });
+      setMsg({ kind: 'err', text: friendlyError(e) });
     } finally {
       setBusy(undefined);
     }
