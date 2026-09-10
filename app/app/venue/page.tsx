@@ -6,7 +6,6 @@ import ConnectBar from '@/components/ConnectBar';
 import Masthead from '@/components/Masthead';
 import SettlementTape from '@/components/SettlementTape';
 import TradeDesk from '@/components/TradeDesk';
-import VerifierPanel from '@/components/VerifierPanel';
 import { INSTRUMENT } from '@/lib/accounts';
 import { fetchSettlements } from '@/lib/onchain';
 import type { OnChainSettlement } from '@/lib/types';
@@ -65,8 +64,7 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="grid" style={{ marginTop: 18 }}>
-        <VerifierPanel />
+      <div style={{ marginTop: 18 }}>
         <ArcPanel />
       </div>
 
