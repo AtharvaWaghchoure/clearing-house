@@ -3,7 +3,7 @@
 // the ATS tokens (open testnet onboarding). This key NEVER reaches the browser — the module throws
 // if it is ever evaluated in one, and it is only imported from API route handlers.
 
-import { type Hex, type WalletClient, createWalletClient, http } from 'viem';
+import { type Hex, type WalletClient, createWalletClient, http, parseEther } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { atsAbi, engineAbi } from '../abi';
 import { VENUE, hederaTestnet, publicClient } from '../chain';
@@ -75,4 +75,18 @@ export function mint(token: Address, to: Address, amount: bigint): Promise<Hex> 
 /** Clear a matched trade atomically (operator-only). */
 export function settle(trade: Trade): Promise<Hex> {
   return send(VENUE.engine, engineAbi, 'settle', [trade]);
+}
+
+/** HBAR balance (wei; the relay reports 18-dec) of an address. */
+export function hbarBalanceWei(addr: Address): Promise<bigint> {
+  return publicClient.getBalance({ address: addr });
+}
+
+/** Send `hbar` HBAR to `to`, lazy-creating the account if needed — enough gas for a new user to
+ *  sign their own holds. */
+export async function fundHbar(to: Address, hbar: string): Promise<Hex> {
+  const { account, wallet } = operator();
+  const hash = await wallet.sendTransaction({ account, chain: hederaTestnet, to, value: parseEther(hbar) });
+  await publicClient.waitForTransactionReceipt({ hash });
+  return hash;
 }

@@ -4,9 +4,9 @@
 // a public testnet faucet. The operator key never leaves the server.
 
 import { NextResponse } from 'next/server';
-import { isAddress } from 'viem';
+import { isAddress, parseEther } from 'viem';
 import { VENUE, scan } from '@/lib/chain';
-import { mint, operatorAddress, setVerified } from '@/lib/server/operator';
+import { fundHbar, hbarBalanceWei, mint, operatorAddress, setVerified } from '@/lib/server/operator';
 import type { Address } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -15,6 +15,10 @@ export const dynamic = 'force-dynamic';
 /** Faucet grant per onboarding — enough free balance to place a bond hold or a cash hold. */
 const FAUCET_BOND = 1000n;
 const FAUCET_CASH = 100_000n;
+/** HBAR of gas for a new wallet; only sent when the wallet is below the floor, so repeat onboarding
+ *  can't drain the operator. */
+const HBAR_DRIP = '5';
+const HBAR_FLOOR = parseEther('1');
 
 export async function POST(req: Request) {
   let body: { address?: string };
@@ -29,7 +33,9 @@ export async function POST(req: Request) {
   const who = body.address as Address;
 
   try {
-    // Sequential to keep the operator's nonce ordered: verify on both tokens, then fund both.
+    // Gas first (lazy-creates the account) if the wallet is low; then verify + fund. Sequential to
+    // keep the operator's nonce ordered.
+    const fundHbarTx = (await hbarBalanceWei(who)) < HBAR_FLOOR ? await fundHbar(who, HBAR_DRIP) : undefined;
     const verifyBond = await setVerified(VENUE.bondToken, who);
     const verifyCash = await setVerified(VENUE.cashToken, who);
     const mintBond = await mint(VENUE.bondToken, who, FAUCET_BOND);
@@ -39,8 +45,8 @@ export async function POST(req: Request) {
       ok: true,
       address: who,
       operator: operatorAddress(),
-      granted: { bond: FAUCET_BOND.toString(), cash: FAUCET_CASH.toString() },
-      txs: { verifyBond, verifyCash, mintBond, mintCash },
+      granted: { bond: FAUCET_BOND.toString(), cash: FAUCET_CASH.toString(), hbar: fundHbarTx ? HBAR_DRIP : '0' },
+      txs: { fundHbar: fundHbarTx, verifyBond, verifyCash, mintBond, mintCash },
       links: { verifyBond: scan.tx(verifyBond), mintBond: scan.tx(mintBond), mintCash: scan.tx(mintCash) },
     });
   } catch (e) {
