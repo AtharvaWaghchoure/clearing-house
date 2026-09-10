@@ -113,6 +113,19 @@ contract MockATSSecurity is IATSSecurity, IATSErrors {
         return (true, id.partition);
     }
 
+    /// @notice Holder reclaims a hold they placed — credits the held amount back to their free
+    ///         balance and clears the hold. This is what the venue's "cancel order" calls, so a
+    ///         resting order can be withdrawn without stranding the escrowed funds. Only the hold's
+    ///         owner can release it (`msg.sender == tokenHolder`).
+    function releaseHoldByPartition(bytes32 partition, uint256 holdId) external returns (bool success_) {
+        Hold storage h = _holds[msg.sender][partition][holdId];
+        if (h.escrow == address(0)) revert WrongHoldId();
+        uint256 amount = h.amount;
+        delete _holds[msg.sender][partition][holdId];
+        _available[partition][msg.sender] += amount;
+        return true;
+    }
+
     /// @inheritdoc IATSSecurity
     /// @dev Mirrors ERC1594StorageWrapper: recipient-side identity/control first (the venue calls
     ///      this with `_from == address(0)`, so sender checks are skipped — matching

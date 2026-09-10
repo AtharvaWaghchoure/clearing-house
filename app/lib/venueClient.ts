@@ -82,6 +82,24 @@ export function submitOrder(o: {
   return postJSON<{ order: BookOrder }>('/api/venue/orders', o).then((r) => r.order);
 }
 
+/** Reclaim a hold the user placed (cancel), returning the escrowed funds to their free balance. */
+export async function releaseHold(
+  wallet: WalletClient,
+  account: Address,
+  token: Address,
+  holdId: string,
+): Promise<void> {
+  const hash = await wallet.writeContract({
+    account,
+    chain: hederaTestnet,
+    address: token,
+    abi: atsAbi,
+    functionName: 'releaseHoldByPartition',
+    args: [VENUE.partition, BigInt(holdId)],
+  });
+  await publicClient.waitForTransactionReceipt({ hash });
+}
+
 export function cancelOrder(id: string): Promise<unknown> {
   return fetch(`/api/venue/orders?id=${id}`, { method: 'DELETE' });
 }

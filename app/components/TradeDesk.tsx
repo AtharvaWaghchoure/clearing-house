@@ -9,7 +9,16 @@ import { INSTRUMENT, deskName } from '@/lib/accounts';
 import { VENUE } from '@/lib/chain';
 import { cashStr } from '@/lib/format';
 import { bondEligibility } from '@/lib/onchain';
-import { type BookOrder, fetchOrders, onboard, placeHold, settlePair, submitOrder } from '@/lib/venueClient';
+import {
+  type BookOrder,
+  cancelOrder,
+  fetchOrders,
+  onboard,
+  placeHold,
+  releaseHold,
+  settlePair,
+  submitOrder,
+} from '@/lib/venueClient';
 import { useWallet } from '@/lib/wallet';
 
 type Msg = { kind: 'ok' | 'err'; text: string; link?: string };
@@ -120,13 +129,55 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
     }
   }
 
-  const row = (o: BookOrder, sel: string | undefined, set: (id?: string) => void) => (
-    <button key={o.id} className={`td-row ${sel === o.id ? 'sel' : ''}`} onClick={() => set(sel === o.id ? undefined : o.id)}>
-      <span className="q">{o.quantity}</span>
-      <span className={`p ${o.side}`}>{o.price}</span>
-      <span className="who">{deskName(o.account)}</span>
-    </button>
-  );
+  async function doCancel(o: BookOrder) {
+    const wallet = w.walletClient();
+    if (!w.address || !wallet) return;
+    setBusy('Cancelling — releasing your hold, confirm in your wallet…');
+    setMsg(undefined);
+    try {
+      const token = o.side === 'ask' ? VENUE.bondToken : VENUE.cashToken;
+      await releaseHold(wallet, w.address, token, o.holdId);
+      await cancelOrder(o.id);
+      if (selBid === o.id) setSelBid(undefined);
+      if (selAsk === o.id) setSelAsk(undefined);
+      setMsg({ kind: 'ok', text: 'Order cancelled — hold released, funds back in your balance.' });
+      refresh();
+    } catch (e) {
+      setMsg({ kind: 'err', text: (e as Error).message });
+    } finally {
+      setBusy(undefined);
+    }
+  }
+
+  const row = (o: BookOrder, sel: string | undefined, set: (id?: string) => void) => {
+    const mine = !!w.address && o.account.toLowerCase() === w.address.toLowerCase();
+    return (
+      <div
+        key={o.id}
+        className={`td-row ${sel === o.id ? 'sel' : ''}${mine ? ' mine' : ''}`}
+        onClick={() => set(sel === o.id ? undefined : o.id)}
+      >
+        <span className="q">{o.quantity}</span>
+        <span className={`p ${o.side}`}>{o.price}</span>
+        <span className="who">{mine ? 'you' : deskName(o.account)}</span>
+        {mine ? (
+          <button
+            className="td-cancel"
+            title="Cancel order — release your hold"
+            onClick={(e) => {
+              e.stopPropagation();
+              void doCancel(o);
+            }}
+            disabled={!!busy}
+          >
+            ✕
+          </button>
+        ) : (
+          <span className="td-cancel-spacer" aria-hidden />
+        )}
+      </div>
+    );
+  };
 
   return (
     <section className="panel tradedesk">

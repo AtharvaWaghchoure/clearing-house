@@ -10,6 +10,8 @@ export const atsAbi = parseAbi([
   'struct HoldIdentifier { bytes32 partition; address tokenHolder; uint256 holdId; }',
   // holder places a hold over its own balance; returns the assigned hold id
   'function createHoldByPartition(bytes32 partition, Hold hold) returns (bool success, uint256 holdId)',
+  // holder reclaims a hold it placed (cancel an order) — credits the amount back to free balance
+  'function releaseHoldByPartition(bytes32 partition, uint256 holdId) returns (bool success)',
   // escrow moves the held tokens (called by the leg inside settle; here for completeness)
   'function executeHoldByPartition(HoldIdentifier holdIdentifier, address to, uint256 amount) returns (bool success, bytes32 partition)',
   // read-only eligibility: EIP-1066 code + ATS reason selector

@@ -16,17 +16,19 @@ export const hederaTestnet = defineChain({
   testnet: true,
 });
 
-/** The live MockATS venue (docs/hedera-deployment.md, run of 2026-09-08). The operator can freely
- *  mint + verify any address on these tokens — that is what makes open, any-user onboarding possible. */
+/** The live MockATS venue on Hedera testnet. Engine + leg are the original source-verified deploy
+ *  (docs/hedera-deployment.md); the bond + cash tokens were redeployed to support hold release, so a
+ *  resting order can be cancelled without stranding funds. The operator can freely mint + verify any
+ *  address on these tokens — that is what makes open, any-user onboarding possible. */
 export const VENUE = {
   engine: '0xa73690cb94d03ee05a68fd2de753964b73a7072a' as Address,
   holdLeg: '0x90775920812cc4726c75e651fe30bc2606f78dee' as Address,
-  bondToken: '0x4f76877d98db72102127fab8b0a1e7fedf763604' as Address,
-  cashToken: '0xa6491faaf3f5ef0b582e2a865ca6e3b993d09f79' as Address,
+  bondToken: '0x41319f14830c5f5c9f516ea1df38f19a3d5867f2' as Address,
+  cashToken: '0xb91fc2d26da6537496d12be577b2a1734ed78296' as Address,
   /** _DEFAULT_PARTITION — the senior tranche. */
   partition: '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex,
-  /** First block of the deployment; mirror-node scans start here. */
-  fromBlock: 40252086,
+  /** Block the current tokens were deployed at; earlier settlements used prior tokens. */
+  fromBlock: 40334311,
 } as const;
 
 /** Hedera mirror node — the reliable, range-tolerant source of contract logs. */

@@ -49,7 +49,20 @@ export async function fetchSettlements(): Promise<OnChainSettlement[]> {
       continue; // a log whose topic0 isn't in the engine ABI
     }
     if (decoded.eventName !== 'SettlementReceipt') continue;
-    const a = decoded.args as unknown as Record<string, Address & bigint & Hex>;
+    const a = decoded.args as unknown as {
+      tradeId: Hex;
+      bondToken: Address;
+      seller: Address;
+      buyer: Address;
+      quantity: bigint;
+      cashToken: Address;
+      cashAmount: bigint;
+      bondCode: Hex;
+      cashCode: Hex;
+    };
+    // the engine is long-lived; show only settlements on the current bond token (the venue's tokens
+    // were redeployed for hold release, so earlier receipts reference retired tokens)
+    if (a.bondToken.toLowerCase() !== VENUE.bondToken.toLowerCase()) continue;
     out.push({
       tradeId: a.tradeId,
       bondToken: a.bondToken,
