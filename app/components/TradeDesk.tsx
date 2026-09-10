@@ -74,10 +74,15 @@ export default function TradeDesk({ onSettled }: { onSettled?: () => void }) {
     setBusy('Onboarding — verifying identity + funding on testnet…');
     setMsg(undefined);
     try {
-      await onboard(w.address);
+      const res = await onboard(w.address);
       setVerified(true);
       signalRefresh();
-      setMsg({ kind: 'ok', text: 'Onboarded — you are verified and funded with test bond + cash.' });
+      setMsg({
+        kind: 'ok',
+        text: res.hbarNote
+          ? `Verified + funded — ${res.hbarNote}.`
+          : 'Onboarded — verified and funded with test bond + cash.',
+      });
     } catch (e) {
       setMsg({ kind: 'err', text: (e as Error).message });
     } finally {

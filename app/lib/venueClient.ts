@@ -32,9 +32,13 @@ async function postJSON<T>(url: string, body: unknown): Promise<T> {
   return j as T;
 }
 
-/** Verify + faucet-fund an address (operator-signed, server-side). Takes ~4 testnet txs. */
+/** Verify + faucet-fund an address (operator-signed, server-side). `hbarNote` is set when the gas
+ *  faucet is throttled and the user should self-fund. */
 export function onboard(address: Address) {
-  return postJSON<{ ok: true; txs: Record<string, Hex> }>('/api/venue/onboard', { address });
+  return postJSON<{ ok: true; hbarNote?: string; granted: { bond: string; cash: string; hbar: string } }>(
+    '/api/venue/onboard',
+    { address },
+  );
 }
 
 export async function fetchOrders(): Promise<BookOrder[]> {
