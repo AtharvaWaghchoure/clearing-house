@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { deskName, INSTRUMENT } from '@/lib/accounts';
 import { cashStr, qtyStr, shortId, blockStr } from '@/lib/format';
-import type { VenueState } from '@/lib/venue';
+import type { OnChainSettlement } from '@/lib/types';
 
-export default function SettlementTape({ state }: { state: VenueState }) {
-  const rows = [...state.settlements].reverse();
+export default function SettlementTape({ settlements }: { settlements: OnChainSettlement[] }) {
+  const rows = [...settlements].reverse();
 
   return (
     <section className="panel">
@@ -20,7 +20,7 @@ export default function SettlementTape({ state }: { state: VenueState }) {
 
       <div className="tape">
         {rows.length === 0 ? (
-          <div className="empty">No settlements yet — match a bid against an ask.</div>
+          <div className="empty">No settlements on-chain yet — read live from Hedera testnet.</div>
         ) : (
           rows.map((s) => (
             <Link

@@ -2004,3 +2004,316 @@ a.tape-row:hover {
 a.tape-row:hover .tid {
   color: var(--gold);
 }
+
+/* ── live wallet / position bar (real Hedera-testnet reads) ──────────────── */
+.connectbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 14px 0 0;
+  padding: 11px 16px;
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line-2);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.connectbar.warn {
+  border-color: var(--bad-line);
+  background: var(--bad-dim);
+}
+.connectbar.on {
+  border-color: var(--gold-line);
+}
+.cb-lead {
+  color: var(--ink-2);
+  letter-spacing: 0.02em;
+}
+.connectbar.warn .cb-lead {
+  color: var(--bad-2);
+}
+.cb-connect {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 15px;
+  background: var(--gold);
+  color: #10120c;
+  border: none;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.cb-connect:hover {
+  background: var(--gold-2);
+}
+.cb-connect:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.cb-connect .arw {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+.cb-connect:hover .arw {
+  transform: translateX(2px);
+}
+.cb-acct {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cb-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok-line);
+}
+.cb-addr {
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+.cb-addr:hover {
+  color: var(--gold-2);
+}
+.cb-pos {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+}
+.cb-k {
+  color: var(--faint);
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+.cb-v {
+  color: var(--ink);
+}
+.cb-v.num {
+  font-variant-numeric: tabular-nums;
+}
+.cb-kyc {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 2px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+.cb-kyc.ok {
+  color: var(--ok-2);
+  background: var(--ok-dim);
+  border: 1px solid var(--ok-line);
+}
+.cb-kyc.no {
+  color: var(--bad-2);
+  background: var(--bad-dim);
+  border: 1px solid var(--bad-line);
+}
+.cb-refresh {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  color: var(--dim);
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cb-refresh:hover {
+  color: var(--gold-2);
+  border-color: var(--gold-line);
+}
+.cb-refresh:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── live trade desk ─────────────────────────────────────────────────────── */
+.tradedesk .td-gate,
+.td-onboard {
+  padding: 16px;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.td-gate.warn {
+  color: var(--bad-2);
+}
+.td-onboard p {
+  margin: 0 0 12px;
+}
+.td-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.td-modes {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+}
+.td-modes button {
+  flex: 1;
+  padding: 8px;
+  background: var(--panel-2);
+  color: var(--dim);
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.td-modes button.on {
+  color: var(--gold-2);
+  border-color: var(--gold-line);
+  background: var(--gold-dim);
+}
+.td-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.td-field span {
+  color: var(--faint);
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+.td-field input {
+  padding: 8px 10px;
+  background: var(--bg-2);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.td-field input:focus {
+  outline: none;
+  border-color: var(--gold-line);
+}
+.td-note {
+  grid-column: 1 / -1;
+  color: var(--dim);
+  font-size: 10.5px;
+}
+.td-place {
+  grid-column: 1 / -1;
+  margin-left: 0;
+  justify-content: center;
+}
+.td-book {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+}
+.td-col {
+  background: var(--panel);
+}
+.td-h {
+  padding: 8px 12px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  border-bottom: 1px solid var(--line);
+}
+.td-h.bid {
+  color: var(--bid);
+}
+.td-h.ask {
+  color: var(--ask);
+}
+.td-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px 52px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.td-row:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+.td-row.sel {
+  background: var(--gold-dim);
+}
+.td-row .q {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.td-row .p {
+  font-variant-numeric: tabular-nums;
+}
+.td-row .p.bid {
+  color: var(--bid);
+}
+.td-row .p.ask {
+  color: var(--ask);
+}
+.td-row .who {
+  color: var(--dim);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.td-settle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+}
+.td-settle .cb-connect {
+  margin-left: 0;
+}
+.td-hint {
+  color: var(--dim);
+  font-size: 10px;
+}
+.td-status {
+  padding: 10px 16px;
+  font-size: 11px;
+  border-top: 1px solid var(--line);
+}
+.td-status.busy {
+  color: var(--gold-2);
+}
+.td-status.ok {
+  color: var(--ok-2);
+}
+.td-status.err {
+  color: var(--bad-2);
+}
+.td-status a {
+  color: inherit;
+}

@@ -1,57 +1,83 @@
 'use client';
 
+// The independent verifier, reading the same public Hedera-testnet facts the rest of the terminal
+// does: SettlementReceipts + ATS identity/control events. It reconstructs each settlement's
+// compliance at the block it cleared — sharing no venue code — and reconciles it against the venue's
+// report. The Fabricate/Hide toggles inject a lie into that report to show reconstruction catches it.
+
 import { useCallback, useEffect, useState } from 'react';
+import { VENUE } from '@/lib/chain';
 import { shortId } from '@/lib/format';
+import { fetchComplianceEvents, fetchSettlements } from '@/lib/onchain';
+import type { AuditReport, ComplianceEvent, Hex, OnChainSettlement, VenueClaim } from '@/lib/types';
 import { audit } from '@/lib/verify';
-import type { AuditReport, Hex, VenueClaim } from '@/lib/types';
-import type { VenueStore, VenueState } from '@/lib/venue';
 
 type LieKind = 'none' | 'fabricate' | 'hide';
 
-// A trade id the venue claims cleared but which has no on-chain receipt. Matches the fabricated
-// entry in the local demo ledger (verifier/.local/venue-ledger.json → 0x…019d).
+// A trade id the venue would claim cleared but which has no on-chain receipt.
 const FABRICATED: Hex = '0x000000000000000000000000000000000000000000000000000000000000019d';
+const DEAD = '0x000000000000000000000000000000000000dEaD' as const;
 
-export default function VerifierPanel({ store, state }: { store: VenueStore; state: VenueState }) {
+/** The venue's honest self-report: exactly what actually cleared on-chain. */
+function honestClaims(settlements: OnChainSettlement[]): VenueClaim[] {
+  return settlements.map((s) => ({
+    tradeId: s.tradeId,
+    bondToken: s.bondToken,
+    seller: s.seller,
+    buyer: s.buyer,
+    quantity: s.quantity.toString(),
+    cashToken: s.cashToken,
+    cashAmount: s.cashAmount.toString(),
+    compliant: true,
+  }));
+}
+
+export default function VerifierPanel() {
+  const [settlements, setSettlements] = useState<OnChainSettlement[]>([]);
+  const [events, setEvents] = useState<ComplianceEvent[]>([]);
   const [lie, setLie] = useState<LieKind>('none');
   const [report, setReport] = useState<AuditReport | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const settleKey = state.settlements.map((s) => s.tradeId).join(',');
-  const eventKey = state.events.length;
-
-  const run = useCallback(async () => {
+  const load = useCallback(async () => {
     setBusy(true);
-    const honest = store.honestClaims();
-    const lastId = state.settlements.at(-1)?.tradeId;
-    const body =
-      lie === 'fabricate'
-        ? { claims: honest, lie: { kind: 'fabricate', tradeId: FABRICATED } }
-        : lie === 'hide' && lastId
-          ? { claims: honest, lie: { kind: 'hide', tradeId: lastId } }
-          : { claims: honest, lie: { kind: 'none' } };
-
-    let venueReport: VenueClaim[] = honest;
     try {
-      const res = await fetch('/api/venue/report', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const json = await res.json();
-      if (Array.isArray(json.report)) venueReport = json.report;
+      const [s, e] = await Promise.all([fetchSettlements(), fetchComplianceEvents()]);
+      setSettlements(s);
+      setEvents(e);
     } catch {
-      // backend unreachable — reconcile against the honest claims we hold locally.
+      // chain unreachable — keep the last good data
+    } finally {
+      setBusy(false);
     }
-    setReport(audit(state.settlements, state.events, venueReport));
-    setBusy(false);
-  }, [store, state.settlements, state.events, lie]);
+  }, []);
 
-  // Re-audit whenever the chain moves or the injected lie changes.
   useEffect(() => {
-    run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settleKey, eventKey, lie]);
+    void load();
+  }, [load]);
+
+  // Re-audit whenever the chain data or the injected lie changes.
+  useEffect(() => {
+    let claims = honestClaims(settlements);
+    if (lie === 'fabricate') {
+      claims = [
+        ...claims,
+        {
+          tradeId: FABRICATED,
+          bondToken: VENUE.bondToken,
+          seller: DEAD,
+          buyer: DEAD,
+          quantity: '1',
+          cashToken: VENUE.cashToken,
+          cashAmount: '1',
+          compliant: true,
+        },
+      ];
+    } else if (lie === 'hide' && claims.length > 0) {
+      claims = claims.slice(0, -1);
+    }
+    setReport(audit(settlements, events, claims));
+  }, [settlements, events, lie]);
 
   const clean = report?.clean ?? true;
 
@@ -62,7 +88,7 @@ export default function VerifierPanel({ store, state }: { store: VenueStore; sta
           <span className="ix">iv.</span>
           <h2>Independent Verifier</h2>
         </div>
-        <span className="hint">shares no venue code</span>
+        <span className="hint">reads Hedera · shares no venue code</span>
       </header>
 
       <div className="vf-controls">
@@ -81,11 +107,11 @@ export default function VerifierPanel({ store, state }: { store: VenueStore; sta
         <button
           className={`tinybtn danger ${lie === 'hide' ? 'on' : ''}`}
           onClick={() => setLie(lie === 'hide' ? 'none' : 'hide')}
-          disabled={state.settlements.length === 0}
+          disabled={settlements.length === 0}
         >
           Hide last
         </button>
-        <button className="tinybtn" onClick={run} style={{ marginLeft: 'auto' }}>
+        <button className="tinybtn" onClick={() => void load()} style={{ marginLeft: 'auto' }}>
           {busy ? 'Reconstructing…' : 'Re-audit'}
         </button>
       </div>

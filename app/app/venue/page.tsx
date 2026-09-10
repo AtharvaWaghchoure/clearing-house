@@ -1,43 +1,33 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import Masthead from '@/components/Masthead';
-import OrderBook from '@/components/OrderBook';
-import SettlementPanel from '@/components/SettlementPanel';
-import SettlementTape from '@/components/SettlementTape';
-import VerifierPanel from '@/components/VerifierPanel';
-import KycConsole from '@/components/KycConsole';
+import { useCallback, useEffect, useState } from 'react';
 import ArcPanel from '@/components/ArcPanel';
+import ConnectBar from '@/components/ConnectBar';
+import Masthead from '@/components/Masthead';
+import SettlementTape from '@/components/SettlementTape';
+import TradeDesk from '@/components/TradeDesk';
+import VerifierPanel from '@/components/VerifierPanel';
 import { INSTRUMENT } from '@/lib/accounts';
-import type { Order } from '@/lib/types';
-import { createVenueStore, type VenueStore } from '@/lib/venue';
+import { fetchSettlements } from '@/lib/onchain';
+import type { OnChainSettlement } from '@/lib/types';
 
 export default function Page() {
-  const storeRef = useRef<VenueStore>();
-  if (!storeRef.current) storeRef.current = createVenueStore();
-  const store = storeRef.current;
-
-  const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
-
-  const [selBid, setSelBid] = useState<string>();
-  const [selAsk, setSelAsk] = useState<string>();
-
-  // Keep a valid pair selected: default to top-of-book, and re-default when a selection is consumed.
+  // Settlement history, read live from Hedera testnet (mirror node). Polls so new clears appear.
+  const [chainSettlements, setChainSettlements] = useState<OnChainSettlement[]>([]);
+  const loadSettlements = useCallback(() => {
+    fetchSettlements().then(setChainSettlements).catch(() => {});
+  }, []);
   useEffect(() => {
-    const has = (id?: string, side?: 'bid' | 'ask') =>
-      id && state.orders.some((o) => o.id === id && o.side === side);
-    if (!has(selBid, 'bid')) setSelBid(store.bestBid()?.id);
-    if (!has(selAsk, 'ask')) setSelAsk(store.bestAsk()?.id);
-  }, [state.orders, selBid, selAsk, store]);
-
-  const bid = useMemo(() => state.orders.find((o) => o.id === selBid), [state.orders, selBid]);
-  const ask = useMemo(() => state.orders.find((o) => o.id === selAsk), [state.orders, selAsk]);
-
-  const pick = (o: Order) => (o.side === 'bid' ? setSelBid(o.id) : setSelAsk(o.id));
+    loadSettlements();
+    const t = setInterval(loadSettlements, 15000);
+    return () => clearInterval(t);
+  }, [loadSettlements]);
 
   return (
     <main className="terminal">
-      <Masthead state={state} />
+      <Masthead settlements={chainSettlements} />
+
+      <ConnectBar />
 
       <div className="instrument">
         <div className="cell hero">
@@ -68,17 +58,15 @@ export default function Page() {
 
       <div className="grid">
         <div className="col">
-          <OrderBook store={store} state={state} selBid={selBid} selAsk={selAsk} onPick={pick} />
-          <KycConsole store={store} state={state} />
+          <TradeDesk onSettled={loadSettlements} />
         </div>
         <div className="col">
-          <SettlementPanel store={store} state={state} bid={bid} ask={ask} onSettled={() => void 0} />
-          <SettlementTape state={state} />
+          <SettlementTape settlements={chainSettlements} />
         </div>
       </div>
 
       <div className="grid" style={{ marginTop: 18 }}>
-        <VerifierPanel store={store} state={state} />
+        <VerifierPanel />
         <ArcPanel />
       </div>
 
@@ -86,9 +74,7 @@ export default function Page() {
         <span className="seam">
           one seam · <b>ISettlementLeg</b> · delivery always an ATS Hold, payment swappable
         </span>
-        <span>
-          HEDERA ATS · THE GRAPH · ARC — built for ETHOnline 2026
-        </span>
+        <span>HEDERA ATS · THE GRAPH · ARC — built for ETHOnline 2026</span>
       </footer>
     </main>
   );

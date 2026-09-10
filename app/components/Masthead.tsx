@@ -1,11 +1,12 @@
 'use client';
 
-import { cashStr, blockStr } from '@/lib/format';
-import type { VenueState } from '@/lib/venue';
+import { blockStr, cashStr } from '@/lib/format';
+import type { OnChainSettlement } from '@/lib/types';
 
-export default function Masthead({ state }: { state: VenueState }) {
-  const cleared = state.settlements.length;
-  const notional = state.settlements.reduce((a, s) => a + Number(s.cashAmount), 0);
+export default function Masthead({ settlements }: { settlements: OnChainSettlement[] }) {
+  const cleared = settlements.length;
+  const notional = settlements.reduce((a, s) => a + Number(s.cashAmount), 0);
+  const lastBlock = settlements.reduce((m, s) => (s.blockNumber > m ? s.blockNumber : m), 0n);
 
   return (
     <header className="masthead">
@@ -21,8 +22,8 @@ export default function Masthead({ state }: { state: VenueState }) {
 
       <div className="masthead-right">
         <div className="stat">
-          <div className="v num">{blockStr(state.block)}</div>
-          <div className="k">Block</div>
+          <div className="v num">{lastBlock > 0n ? blockStr(lastBlock) : '—'}</div>
+          <div className="k">Last block</div>
         </div>
         <div className="stat">
           <div className="v num">{cleared}</div>
@@ -34,7 +35,7 @@ export default function Masthead({ state }: { state: VenueState }) {
         </div>
         <div className="pulse">
           <i />
-          Local · Anvil
+          Live · Hedera Testnet
         </div>
       </div>
     </header>
