@@ -7,7 +7,7 @@ import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { toHex } from 'viem';
 import { VENUE, scan } from '@/lib/chain';
-import { getOrder, removeOrder } from '@/lib/server/book';
+import { getOrder, removeOrder } from '@/lib/server/store';
 import { type Trade, settle } from '@/lib/server/operator';
 
 export const runtime = 'nodejs';
@@ -15,8 +15,8 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   const b = (await req.json().catch(() => ({}))) as { bidId?: string; askId?: string };
-  const bid = b.bidId ? getOrder(b.bidId) : undefined;
-  const ask = b.askId ? getOrder(b.askId) : undefined;
+  const bid = b.bidId ? await getOrder(b.bidId) : undefined;
+  const ask = b.askId ? await getOrder(b.askId) : undefined;
 
   if (!bid || bid.side !== 'bid') return NextResponse.json({ error: 'bid order not found' }, { status: 404 });
   if (!ask || ask.side !== 'ask') return NextResponse.json({ error: 'ask order not found' }, { status: 404 });
@@ -57,8 +57,8 @@ export async function POST(req: Request) {
 
   try {
     const txHash = await settle(trade);
-    removeOrder(bid.id);
-    removeOrder(ask.id);
+    await removeOrder(bid.id);
+    await removeOrder(ask.id);
     return NextResponse.json({
       ok: true,
       tradeId,

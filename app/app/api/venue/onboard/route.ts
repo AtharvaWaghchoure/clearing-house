@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { isAddress, parseEther } from 'viem';
 import { VENUE, scan } from '@/lib/chain';
 import { fundHbar, hbarBalanceWei, mint, operatorAddress, setVerified } from '@/lib/server/operator';
+import { getCooldown, pushOnboard, setCooldown, windowOnboards } from '@/lib/server/store';
 import type { Address, Hex } from '@/lib/types';
 
 export const runtime = 'nodejs';
@@ -20,11 +21,12 @@ const FAUCET_CASH = 100_000n;
 const HBAR_DRIP = '5';
 const HBAR_FLOOR = parseEther('1');
 
-// Per-address cooldown (globalThis so it's shared across route bundles): onboarding costs operator
-// gas, so we don't let one address trigger it repeatedly.
-const g = globalThis as unknown as { __onboardSeen?: Map<string, number> };
-const recentOnboards = (g.__onboardSeen ??= new Map<string, number>());
-const ONBOARD_COOLDOWN_MS = 30_000;
+// Onboarding costs operator gas, so a per-address cooldown stops one address from triggering it
+// repeatedly. The cooldown + the circuit-breaker ledger below live in the shared store (Redis in
+// prod), so the guard survives restarts and holds across instances — not just within one process.
+// Must exceed the onboard's own latency (~4 sequential on-chain receipts, ~35s) or it would lapse
+// before the call returns and fail to throttle back-to-back onboards.
+const ONBOARD_COOLDOWN_MS = 60_000;
 
 // Circuit-breaker so fresh-address spam can't drain the operator (a new wallet clears the per-address
 // cooldown every time). A rolling-window ledger caps how much HBAR is dripped and how many onboards
@@ -34,13 +36,6 @@ const OPERATOR_HBAR_FLOOR = parseEther('100'); // never drip below this reserve
 const CB_WINDOW_MS = 60 * 60 * 1000; // rolling 1h
 const CB_MAX_ONBOARDS = 60; // onboards per window (caps operator gas spend)
 const CB_HBAR_BUDGET = parseEther('100'); // HBAR dripped per window
-
-const gb = globalThis as unknown as { __onboardLog?: { t: number; drippedWei: bigint }[] };
-const onboardLog = (gb.__onboardLog ??= []);
-function windowLog(now: number) {
-  while (onboardLog.length > 0 && now - onboardLog[0].t > CB_WINDOW_MS) onboardLog.shift();
-  return onboardLog;
-}
 
 export async function POST(req: Request) {
   let body: { address?: string };
@@ -55,15 +50,15 @@ export async function POST(req: Request) {
   const who = body.address as Address;
 
   const now = Date.now();
-  const last = recentOnboards.get(who.toLowerCase());
+  const last = await getCooldown(who);
   if (last && now - last < ONBOARD_COOLDOWN_MS) {
     return NextResponse.json({ error: 'onboarding cooldown — wait a moment and retry' }, { status: 429 });
   }
-  const win = windowLog(now);
-  if (win.length >= CB_MAX_ONBOARDS) {
+  const { count, drippedWei: drippedSoFar } = await windowOnboards(now, CB_WINDOW_MS);
+  if (count >= CB_MAX_ONBOARDS) {
     return NextResponse.json({ error: 'onboarding is temporarily rate-limited — try again shortly' }, { status: 429 });
   }
-  recentOnboards.set(who.toLowerCase(), now);
+  await setCooldown(who, now, ONBOARD_COOLDOWN_MS);
 
   try {
     // HBAR drip, behind the circuit-breaker: only if the wallet is low AND the operator keeps its
@@ -72,15 +67,14 @@ export async function POST(req: Request) {
     let fundHbarTx: Hex | undefined;
     let hbarNote: string | undefined;
     if ((await hbarBalanceWei(who)) < HBAR_FLOOR) {
-      const dripped = win.reduce((sum, e) => sum + e.drippedWei, 0n);
       const opBal = await hbarBalanceWei(operatorAddress());
-      if (opBal - HBAR_DRIP_WEI >= OPERATOR_HBAR_FLOOR && dripped + HBAR_DRIP_WEI <= CB_HBAR_BUDGET) {
+      if (opBal - HBAR_DRIP_WEI >= OPERATOR_HBAR_FLOOR && drippedSoFar + HBAR_DRIP_WEI <= CB_HBAR_BUDGET) {
         fundHbarTx = await fundHbar(who, HBAR_DRIP);
       } else {
         hbarNote = 'gas faucet throttled — fund this wallet from the Hedera portal faucet to trade';
       }
     }
-    onboardLog.push({ t: now, drippedWei: fundHbarTx ? HBAR_DRIP_WEI : 0n });
+    await pushOnboard(now, fundHbarTx ? HBAR_DRIP_WEI : 0n, CB_WINDOW_MS);
 
     const verifyBond = await setVerified(VENUE.bondToken, who);
     const verifyCash = await setVerified(VENUE.cashToken, who);

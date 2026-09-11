@@ -4,14 +4,14 @@
 
 import { NextResponse } from 'next/server';
 import { isAddress } from 'viem';
-import { addOrder, listOrders, removeOrder } from '@/lib/server/book';
+import { addOrder, listOrders, removeOrder } from '@/lib/server/store';
 import type { Address } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  return NextResponse.json({ orders: listOrders() });
+  return NextResponse.json({ orders: await listOrders() });
 }
 
 export async function POST(req: Request) {
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   if (b.holdId === undefined || b.holdId === null || `${b.holdId}` === '') {
     return NextResponse.json({ error: 'holdId is required (place the ATS hold first)' }, { status: 400 });
   }
-  const order = addOrder({
+  const order = await addOrder({
     side: b.side,
     account: b.account as Address,
     price: b.price as number,
@@ -50,5 +50,5 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const id = new URL(req.url).searchParams.get('id');
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
-  return NextResponse.json({ ok: removeOrder(id) });
+  return NextResponse.json({ ok: await removeOrder(id) });
 }
