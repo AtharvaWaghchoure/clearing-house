@@ -1,9 +1,9 @@
 'use client';
 
-// The independent verifier, reading the same public Hedera-testnet facts the rest of the terminal
-// does: SettlementReceipts + ATS identity/control events. It reconstructs each settlement's
-// compliance at the block it cleared — sharing no venue code — and reconciles it against the venue's
-// report. The Fabricate/Hide toggles inject a lie into that report to show reconstruction catches it.
+// The second opinion. It reads the same public Hedera facts the rest of the terminal does —
+// SettlementReceipts plus ATS identity events — reconstructs whether each trade was compliant at
+// the block it cleared, and holds that against what the venue says it did. Sharing no venue code is
+// the whole point, so the controls below let you make the venue lie and watch it get caught.
 
 import { useCallback, useEffect, useState } from 'react';
 import { VENUE } from '@/lib/chain';
@@ -14,11 +14,11 @@ import { audit } from '@/lib/verify';
 
 type LieKind = 'none' | 'fabricate' | 'hide';
 
-// A trade id the venue would claim cleared but which has no on-chain receipt.
+// A trade the venue would claim cleared but for which no receipt exists on-chain.
 const FABRICATED: Hex = '0x000000000000000000000000000000000000000000000000000000000000019d';
 const DEAD = '0x000000000000000000000000000000000000dEaD' as const;
 
-/** The venue's honest self-report: exactly what actually cleared on-chain. */
+/** The venue's honest report: exactly what cleared. */
 function honestClaims(settlements: OnChainSettlement[]): VenueClaim[] {
   return settlements.map((s) => ({
     tradeId: s.tradeId,
@@ -46,7 +46,7 @@ export default function VerifierPanel() {
       setSettlements(s);
       setEvents(e);
     } catch {
-      // chain unreachable — keep the last good data
+      // chain unreachable — keep the last good reading
     } finally {
       setBusy(false);
     }
@@ -56,7 +56,6 @@ export default function VerifierPanel() {
     void load();
   }, [load]);
 
-  // Re-audit whenever the chain data or the injected lie changes.
   useEffect(() => {
     let claims = honestClaims(settlements);
     if (lie === 'fabricate') {
@@ -82,71 +81,64 @@ export default function VerifierPanel() {
   const clean = report?.clean ?? true;
 
   return (
-    <section className="panel verifier">
-      <header>
-        <div className="title">
-          <span className="ix">iv.</span>
-          <h2>Independent Verifier</h2>
-        </div>
-        <span className="hint">reads Hedera · shares no venue code</span>
-      </header>
+    <section>
+      <div className="block-head">
+        <h2>Independent check</h2>
+        <span className="what">reconstructed from chain data, not from the venue</span>
+      </div>
 
-      <div className="vf-controls">
-        <span className="label" style={{ marginRight: 2 }}>
-          Venue report
-        </span>
-        <button className={`tinybtn ${lie === 'none' ? 'run' : ''}`} onClick={() => setLie('none')}>
-          Honest
+      <div className="controls">
+        <span className="lbl">The venue reports</span>
+        <button
+          className={`btn btn-sm${lie === 'none' ? ' honest-on' : ''}`}
+          onClick={() => setLie('none')}
+        >
+          Honestly
         </button>
         <button
-          className={`tinybtn danger ${lie === 'fabricate' ? 'on' : ''}`}
+          className={`btn btn-sm${lie === 'fabricate' ? ' on' : ''}`}
           onClick={() => setLie(lie === 'fabricate' ? 'none' : 'fabricate')}
         >
-          Fabricate {shortId(FABRICATED)}
+          A trade that never happened
         </button>
         <button
-          className={`tinybtn danger ${lie === 'hide' ? 'on' : ''}`}
+          className={`btn btn-sm${lie === 'hide' ? ' on' : ''}`}
           onClick={() => setLie(lie === 'hide' ? 'none' : 'hide')}
           disabled={settlements.length === 0}
         >
-          Hide last
+          One fewer than it cleared
         </button>
-        <button className="tinybtn" onClick={() => void load()} style={{ marginLeft: 'auto' }}>
-          {busy ? 'Reconstructing…' : 'Re-audit'}
+        <button className="btn btn-sm btn-quiet" onClick={() => void load()} disabled={busy}>
+          {busy ? 'Reading the chain' : 'Re-check'}
         </button>
       </div>
 
-      <div className={`attest ${clean ? 'clean' : 'dirty'}`}>
-        <div className="verdict-big">
-          <span className="lamp" />
-          {clean ? 'Report reconciled · no divergence' : 'Divergence detected'}
-        </div>
-        <div className="meta num">
-          {report ? (
-            <>
-              {report.venueClaimsCount} claimed · {report.onChainCount} on-chain · {report.confirmed} confirmed
-            </>
-          ) : (
-            '—'
-          )}
-        </div>
+      <div className={`verdict${clean ? '' : ' dirty'}`}>
+        <i aria-hidden />
+        <span className="say">
+          {clean ? 'The venue’s report matches the chain' : 'The venue’s report contradicts the chain'}
+        </span>
+        <span className="tally">
+          {report
+            ? `${report.confirmed} of ${report.venueClaimsCount} claims confirmed against ${report.onChainCount} on-chain`
+            : '—'}
+        </span>
       </div>
 
-      <div>
-        {report && report.findings.length === 0 && (
-          <div className="empty">Nothing settled yet — the venue has made no claims to check.</div>
-        )}
-        {report?.findings.map((f) => (
-          <div key={`${f.tradeId}-${f.status}`} className={`finding ${f.severity}`}>
-            <span className="lamp" />
-            <span className="tid">{shortId(f.tradeId)}</span>
-            <div className="body">
-              <div className="st">{f.status.replace(/_/g, ' ')}</div>
-              <div className="dt">{f.detail}</div>
-            </div>
+      {report && report.findings.length === 0 ? (
+        <p className="empty">Nothing has settled yet, so there is nothing to check.</p>
+      ) : null}
+
+      {report?.findings.map((f) => (
+        <div key={`${f.tradeId}-${f.status}`} className={`finding ${f.severity}`}>
+          <i aria-hidden />
+          <span className="tid">{shortId(f.tradeId)}</span>
+          <div>
+            <div className="st">{f.status.replace(/_/g, ' ').toLowerCase()}</div>
+            <div className="dt">{f.detail}</div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </section>
   );
 }

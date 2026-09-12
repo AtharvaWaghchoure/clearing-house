@@ -2,6 +2,7 @@
 // verifier/.local/local.json when run in live mode. The desk names are cosmetic; the addresses are
 // the real anvil keypairs the local demo settles between.
 
+import { shortAddr } from './format';
 import type { Address, Hex } from './types';
 
 export interface Desk {
@@ -27,11 +28,12 @@ const BY_ADDR: Record<string, Desk> = Object.fromEntries(
 BY_ADDR[OPERATOR.toLowerCase()] = { address: OPERATOR, name: 'CLEARING DESK', role: 'operator' };
 
 export function deskFor(address: Address): Desk {
-  return (
-    BY_ADDR[address.toLowerCase()] ?? { address, name: 'UNKNOWN', role: 'dealer' }
-  );
+  return BY_ADDR[address.toLowerCase()] ?? { address, name: shortAddr(address), role: 'dealer' };
 }
 
+/** A party's display name. The named desks above only exist on the local anvil demo; on live
+ *  Hedera every counterparty is a real wallet, so fall back to its truncated address rather than
+ *  labelling a genuine participant "UNKNOWN". */
 export function deskName(address: Address): string {
   return deskFor(address).name;
 }

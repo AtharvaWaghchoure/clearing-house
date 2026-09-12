@@ -121,17 +121,34 @@ export function balanceOf(token: Address, holder: Address): Promise<bigint> {
   });
 }
 
-/** Can `who` receive the bond? Probes `canTransferByPartition`; AddressNotVerified ⇒ needs onboarding.
- *  INSUFFICIENT_FUNDS (0x54) means "verified but no free balance" — identity is fine, so we pass it. */
-export async function bondEligibility(
-  who: Address,
-): Promise<{ ok: boolean; code: Hex; codeName: string; reason: string }> {
+export interface Eligibility {
+  ok: boolean;
+  code: Hex;
+  codeName: string;
+  reason: string;
+}
+
+/** The ATS's own answer to "would this leg move right now?" — the same `canTransferByPartition`
+ *  the engine's preflight() calls, so the terminal can name a rejection (0x10 · AddressNotVerified)
+ *  before anyone is asked to sign. INSUFFICIENT_FUNDS (0x54) is not a compliance failure: for a
+ *  resting order the amount is already escrowed in a hold, so identity is what's being tested. */
+export async function transferEligibility(
+  token: Address,
+  from: Address,
+  to: Address,
+  amount = 1n,
+): Promise<Eligibility> {
   const [status, code, reason] = await publicClient.readContract({
-    address: VENUE.bondToken,
+    address: token,
     abi: atsAbi,
     functionName: 'canTransferByPartition',
-    args: [who, who, VENUE.partition, 1n, '0x', '0x'],
+    args: [from, to, VENUE.partition, amount, '0x', '0x'],
   });
   const ok = status || code === '0x54';
   return { ok, code, codeName: codeName(code), reason: reasonName(reason) };
+}
+
+/** Can `who` receive the bond? AddressNotVerified ⇒ they still need onboarding. */
+export function bondEligibility(who: Address): Promise<Eligibility> {
+  return transferEligibility(VENUE.bondToken, who, who);
 }
