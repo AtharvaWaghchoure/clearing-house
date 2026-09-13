@@ -8,6 +8,9 @@ _reference/
 # private idea/strategy notes — not published
 potential_ideas/
 
+# Claude Code repo guidance — kept local, not tracked
+/CLAUDE.md
+
 # secrets
 .env
 .env.*
