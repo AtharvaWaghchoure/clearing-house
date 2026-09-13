@@ -4,6 +4,7 @@
 // strips (masthead / connect bar / stat row) that between them ate a third of the fold while
 // repeating the same two facts. Everything here is read live from Hedera testnet.
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { BrandMark } from '@/components/BrandMark';
 import { INSTRUMENT } from '@/lib/accounts';
@@ -57,11 +58,11 @@ export default function TopBar() {
 
   return (
     <header className="topbar">
-      <div className="brand">
+      <Link href="/" className="brand" aria-label="Clearing House — home">
         <BrandMark className="brand-mark" />
         <span className="brand-name">Clearing House</span>
         <span className="brand-what">delivery versus payment, settled atomically</span>
-      </div>
+      </Link>
 
       <span className="topbar-spacer" />
 
@@ -107,6 +108,13 @@ export default function TopBar() {
               <i aria-hidden />
               {shortAddr(w.address)}
             </a>
+            <button
+              className="btn btn-sm btn-quiet"
+              onClick={() => w.disconnect()}
+              title="Disconnect wallet"
+            >
+              Disconnect
+            </button>
           </>
         )}
       </div>

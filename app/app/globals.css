@@ -162,6 +162,8 @@ button:disabled {
   align-items: baseline;
   gap: 10px;
   flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
 }
 
 .brand-mark {
@@ -178,6 +180,11 @@ button:disabled {
   letter-spacing: 0.005em;
   line-height: 1;
   color: var(--paper);
+  transition: color 0.15s;
+}
+
+.brand:hover .brand-name {
+  color: var(--clear-lift);
 }
 
 .brand-what {
