@@ -12,6 +12,8 @@ import { type Trade, settle } from '@/lib/server/operator';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// settle() is an on-chain write plus its receipt; give it headroom over Vercel's 10s default timeout.
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const b = (await req.json().catch(() => ({}))) as { bidId?: string; askId?: string };

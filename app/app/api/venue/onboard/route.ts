@@ -12,6 +12,9 @@ import type { Address, Hex } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Onboarding awaits ~4 sequential on-chain receipts (~35s). Vercel's default function timeout is 10s,
+// which would kill the call mid-onboard so no one could enter the venue. Raise it (Hobby caps at 60s).
+export const maxDuration = 60;
 
 /** Faucet grant per onboarding — enough free balance to place a bond hold or a cash hold. */
 const FAUCET_BOND = 1000n;
