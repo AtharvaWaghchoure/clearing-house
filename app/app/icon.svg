@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Clearing House">
+  <defs>
+    <linearGradient id="tile" x1="16" y1="0" x2="16" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#13211f"/>
+      <stop offset="1" stop-color="#0b1113"/>
+    </linearGradient>
+  </defs>
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" fill="url(#tile)" stroke="#e7edea" stroke-opacity="0.08"/>
+  <!-- bond leg: delivery, flows right — and its 180° twin, cash flowing left -->
+  <g stroke="#3fb27f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 12.5H23.5"/>
+    <path d="M20.4 9.3L23.8 12.5L20.4 15.7"/>
+    <path d="M25 19.5H8.5"/>
+    <path d="M11.6 22.7L8.2 19.5L11.6 16.3"/>
+  </g>
+  <!-- the bind: both legs clear together, or neither -->
+  <path d="M16 9V23" stroke="#e7edea" stroke-width="2.6" stroke-linecap="round"/>
+</svg>

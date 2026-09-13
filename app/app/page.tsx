@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { BrandMark } from '@/components/BrandMark';
 import { INSTRUMENT } from '@/lib/accounts';
 import { blockStr, cashStr } from '@/lib/format';
 import { fetchSettlements } from '@/lib/onchain';
@@ -38,7 +39,10 @@ export default function Cover() {
   return (
     <main className="cover">
       <header className="cover-top">
-        <span className="brand-name">Clearing House</span>
+        <div className="brand">
+          <BrandMark className="brand-mark" />
+          <span className="brand-name">Clearing House</span>
+        </div>
         <span className="live">
           <i aria-hidden />
           Live on Hedera testnet

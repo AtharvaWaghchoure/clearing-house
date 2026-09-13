@@ -5,6 +5,7 @@
 // repeating the same two facts. Everything here is read live from Hedera testnet.
 
 import { useCallback, useEffect, useState } from 'react';
+import { BrandMark } from '@/components/BrandMark';
 import { INSTRUMENT } from '@/lib/accounts';
 import { VENUE, scan } from '@/lib/chain';
 import { cashStr, qtyStr, shortAddr } from '@/lib/format';
@@ -57,6 +58,7 @@ export default function TopBar() {
   return (
     <header className="topbar">
       <div className="brand">
+        <BrandMark className="brand-mark" />
         <span className="brand-name">Clearing House</span>
         <span className="brand-what">delivery versus payment, settled atomically</span>
       </div>

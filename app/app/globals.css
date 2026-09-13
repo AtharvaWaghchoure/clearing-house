@@ -164,6 +164,13 @@ button:disabled {
   flex-shrink: 0;
 }
 
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .brand-name {
   font-size: 19px;
   font-weight: 600;
